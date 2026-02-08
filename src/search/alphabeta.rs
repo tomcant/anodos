@@ -11,7 +11,7 @@ use crate::position::Board;
 use smallvec::SmallVec;
 
 const LMR_HISTORY_THRESHOLD: i32 = HISTORY_SCORE_MAX / 4;
-const LMP_THRESHOLDS: [u8; 5] = [0, 5, 9, 14, 21];
+const LMP_THRESHOLDS: [u8; 9] = [0, 4, 6, 9, 14, 20, 28, 37, 47];
 
 #[rustfmt::skip]
 pub fn search(
@@ -178,7 +178,8 @@ pub fn search(
         // Late move pruning: skip searching quiet moves late in the move list
         // at lower depths as they're less likely to affect the outcome due to
         // (hopefully) stronger prior moves.
-        if depth <= 4
+        if ply > 0
+            && depth <= 8
             && !in_check
             && !gives_check
             && mv.is_quiet()
