@@ -1,3 +1,4 @@
+use crate::attacks::{attacks, en_passant_attacks, is_attacked, is_in_check};
 use crate::colour::Colour;
 use crate::piece::Piece;
 use crate::position::{Board, CastlingRight, CastlingRights, Position};
@@ -5,11 +6,9 @@ use crate::square::{BACK_RANKS, Square};
 use lazy_static::lazy_static;
 use smallvec::SmallVec;
 
-mod attacks;
 mod r#move;
 pub mod perft;
 
-pub use attacks::*;
 pub use r#move::Move;
 
 pub const MAX_MOVES: usize = 128;
@@ -34,13 +33,12 @@ pub fn generate_all_moves(pos: &Position) -> MoveList {
         while pieces != 0 {
             let from_square = Square::next(&mut pieces);
 
-            let mut to_squares =
-                !pos.board.pieces_by_colour(colour_to_move) & get_attacks(*piece, from_square, &pos.board);
+            let mut to_squares = !pos.board.pieces_by_colour(colour_to_move) & attacks(*piece, from_square, &pos.board);
 
             if piece.is_pawn() {
-                to_squares |= get_pawn_advances(from_square, colour_to_move, &pos.board);
+                to_squares |= pawn_advances(from_square, colour_to_move, &pos.board);
             } else if piece.is_king() {
-                to_squares |= get_castling(pos.castling_rights, colour_to_move, &pos.board);
+                to_squares |= castling(pos.castling_rights, colour_to_move, &pos.board);
             }
 
             while to_squares != 0 {
@@ -75,7 +73,7 @@ pub fn generate_all_moves(pos: &Position) -> MoveList {
     }
 
     if let Some(en_passant_square) = pos.en_passant_square {
-        let mut from_squares = get_en_passant_attacks(en_passant_square, colour_to_move, &pos.board);
+        let mut from_squares = en_passant_attacks(en_passant_square, colour_to_move, &pos.board);
 
         while from_squares != 0 {
             moves.push(Move {
@@ -103,10 +101,10 @@ pub fn generate_non_quiet_moves(pos: &Position) -> MoveList {
             let from_square = Square::next(&mut pieces);
 
             let mut to_squares =
-                pos.board.pieces_by_colour(colour_to_move.flip()) & get_attacks(*piece, from_square, &pos.board);
+                pos.board.pieces_by_colour(colour_to_move.flip()) & attacks(*piece, from_square, &pos.board);
 
             if piece.is_pawn() {
-                to_squares |= get_pawn_advances(from_square, colour_to_move, &pos.board) & BACK_RANKS;
+                to_squares |= pawn_advances(from_square, colour_to_move, &pos.board) & BACK_RANKS;
             }
 
             while to_squares != 0 {
@@ -141,7 +139,7 @@ pub fn generate_non_quiet_moves(pos: &Position) -> MoveList {
     }
 
     if let Some(en_passant_square) = pos.en_passant_square {
-        let mut from_squares = get_en_passant_attacks(en_passant_square, colour_to_move, &pos.board);
+        let mut from_squares = en_passant_attacks(en_passant_square, colour_to_move, &pos.board);
 
         while from_squares != 0 {
             moves.push(Move {
@@ -158,7 +156,7 @@ pub fn generate_non_quiet_moves(pos: &Position) -> MoveList {
     moves
 }
 
-fn get_pawn_advances(square: Square, colour: Colour, board: &Board) -> u64 {
+fn pawn_advances(square: Square, colour: Colour, board: &Board) -> u64 {
     let one_ahead = square.advance(colour);
 
     if board.has_piece_at(one_ahead) {
@@ -178,10 +176,10 @@ fn get_pawn_advances(square: Square, colour: Colour, board: &Board) -> u64 {
     one_ahead.u64() | two_ahead.u64()
 }
 
-fn get_castling(rights: CastlingRights, colour: Colour, board: &Board) -> u64 {
+fn castling(rights: CastlingRights, colour: Colour, board: &Board) -> u64 {
     let castling = match colour {
-        Colour::White => get_white_castling(rights, board),
-        _ => get_black_castling(rights, board),
+        Colour::White => white_castling(rights, board),
+        _ => black_castling(rights, board),
     };
 
     if castling != 0 && !is_in_check(colour, board) {
@@ -191,7 +189,7 @@ fn get_castling(rights: CastlingRights, colour: Colour, board: &Board) -> u64 {
     0
 }
 
-fn get_white_castling(rights: CastlingRights, board: &Board) -> u64 {
+fn white_castling(rights: CastlingRights, board: &Board) -> u64 {
     let mut castling = 0;
 
     if rights.has(CastlingRight::WhiteKing)
@@ -211,7 +209,7 @@ fn get_white_castling(rights: CastlingRights, board: &Board) -> u64 {
     castling
 }
 
-fn get_black_castling(rights: CastlingRights, board: &Board) -> u64 {
+fn black_castling(rights: CastlingRights, board: &Board) -> u64 {
     let mut castling = 0;
 
     if rights.has(CastlingRight::BlackKing)

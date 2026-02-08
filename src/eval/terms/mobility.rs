@@ -1,6 +1,6 @@
 use super::EvalTerm;
+use crate::attacks::attacks;
 use crate::colour::Colour;
-use crate::movegen::get_attacks;
 use crate::piece::Piece;
 use crate::position::Board;
 use crate::square::Square;
@@ -28,7 +28,7 @@ fn mobility(piece: Piece, weights: (i32, i32), occupancy: u64, board: &Board) ->
 
     while pieces != 0 {
         let square = Square::next(&mut pieces);
-        let attacks = get_attacks(piece, square, board) & !occupancy;
+        let attacks = attacks(piece, square, board) & !occupancy;
         let mobility = attacks.count_ones() as i32;
 
         mg += mobility * weights.0;

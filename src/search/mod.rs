@@ -6,8 +6,9 @@ use self::{
     stopper::Stopper,
     tt::TranspositionTable,
 };
+use crate::attacks::is_in_check;
 use crate::eval::*;
-use crate::movegen::{Move, MoveList, generate_all_moves, is_in_check};
+use crate::movegen::{Move, MoveList, generate_all_moves};
 use crate::position::Position;
 
 pub mod report;
@@ -21,6 +22,7 @@ mod killers;
 mod movepicker;
 mod pv;
 mod quiescence;
+mod see;
 
 pub const MAX_DEPTH: u8 = u8::MAX;
 
@@ -48,9 +50,9 @@ pub fn search(
 ) {
     tt.age();
 
-    if let Some(forced_move) = get_forced_move(pos) {
+    if let Some(mv) = forced_move(pos) {
         let mut report = Report::new();
-        report.pv = Some((MoveList::from_slice(&[forced_move]), 0));
+        report.pv = Some((MoveList::from_slice(&[mv]), 0));
         reporter.send(&report);
         return;
     }
@@ -124,7 +126,7 @@ pub fn search(
     }
 }
 
-fn get_forced_move(pos: &mut Position) -> Option<Move> {
+fn forced_move(pos: &mut Position) -> Option<Move> {
     let mut forced_move = None;
     let colour_to_move = pos.colour_to_move;
 

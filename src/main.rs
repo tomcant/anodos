@@ -1,3 +1,4 @@
+mod attacks;
 mod bench;
 mod colour;
 mod eval;
