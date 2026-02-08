@@ -178,7 +178,8 @@ pub fn search(
         // Late move pruning: skip searching quiet moves late in the move list
         // at lower depths as they're less likely to affect the outcome due to
         // (hopefully) stronger prior moves.
-        if depth <= 4
+        if ply > 0
+            && depth <= 4
             && !in_check
             && !gives_check
             && mv.is_quiet()
