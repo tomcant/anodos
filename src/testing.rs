@@ -32,6 +32,17 @@ pub fn make_promotion_move(colour: Colour, from: Square, to: Square, piece: Piec
     }
 }
 
+pub fn make_en_passant_move(colour: Colour, from: Square, to: Square) -> Move {
+    Move {
+        piece: Piece::pawn(colour),
+        from,
+        to,
+        captured_piece: Some(Piece::pawn(colour.flip())),
+        promotion_piece: None,
+        is_en_passant: true,
+    }
+}
+
 // Define the remaining squares for testing purposes
 impl Square {
     pub const A2: Self = Self::from_index(8);

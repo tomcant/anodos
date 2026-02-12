@@ -1,6 +1,7 @@
 use super::{
     history::{HISTORY_SCORE_MAX, HistoryTable},
     killers::KillerMoves,
+    see,
 };
 use crate::eval::terms::PIECE_WEIGHTS;
 use crate::movegen::{MAX_MOVES, Move, generate_all_moves, generate_non_quiet_moves};
@@ -8,11 +9,15 @@ use crate::piece::Piece;
 use crate::position::Position;
 use smallvec::SmallVec;
 
-const SCORE_CAPTURE: i32 = 0;
-const SCORE_PROMOTION: i32 = 1;
-const SCORE_KILLER_1: i32 = 2;
-const SCORE_KILLER_2: i32 = 3;
-const SCORE_QUIET: i32 = SCORE_KILLER_2 + HISTORY_SCORE_MAX + 1;
+const MVV_LVA_SCORE_MAX: i32 = 89_900; // PxQ = Queen (900) * 100 - Pawn (100)
+
+// The "good/bad capture" and "quiet" scores are lower bounds, others are exact.
+const SCORE_GOOD_CAPTURE: i32 = 0;
+const SCORE_PROMOTION: i32 = MVV_LVA_SCORE_MAX + 1;
+const SCORE_KILLER_1: i32 = SCORE_PROMOTION + 1;
+const SCORE_KILLER_2: i32 = SCORE_KILLER_1 + 1;
+const SCORE_QUIET: i32 = SCORE_KILLER_2 + 1;
+const SCORE_BAD_CAPTURE: i32 = SCORE_QUIET + HISTORY_SCORE_MAX + 1;
 
 pub enum MovePickerMode<'a> {
     AllMoves {
@@ -32,6 +37,10 @@ impl MovePicker {
     pub fn new(pos: &Position, mode: MovePickerMode<'_>) -> Self {
         let mut scored_moves = SmallVec::new();
 
+        let mvv_lva = |victim: Piece, attacker: Piece| -> i32 {
+            MVV_LVA_SCORE_MAX - PIECE_WEIGHTS[victim] * 100 + PIECE_WEIGHTS[attacker]
+        };
+
         match &mode {
             MovePickerMode::AllMoves { killers, history, ply } => {
                 let killer1 = killers.probe(*ply, 0);
@@ -39,9 +48,11 @@ impl MovePicker {
 
                 let score = |mv: &Move| {
                     if let Some(victim) = mv.captured_piece {
-                        let mvv = PIECE_WEIGHTS[victim];
-                        let lva = PIECE_WEIGHTS[mv.piece];
-                        return SCORE_CAPTURE - mvv * 100 + lva;
+                        return if see::see_ge(&pos.board, mv) {
+                            SCORE_GOOD_CAPTURE + mvv_lva(victim, mv.piece)
+                        } else {
+                            SCORE_BAD_CAPTURE + mvv_lva(victim, mv.piece)
+                        };
                     }
 
                     if mv.promotion_piece.is_some() {
@@ -60,7 +71,7 @@ impl MovePicker {
                         return SCORE_KILLER_2;
                     }
 
-                    SCORE_QUIET - history.probe(mv.piece, mv.to)
+                    SCORE_QUIET + HISTORY_SCORE_MAX - history.probe(mv.piece, mv.to)
                 };
                 for mv in generate_all_moves(pos) {
                     scored_moves.push((mv, score(&mv)));
@@ -68,9 +79,16 @@ impl MovePicker {
             }
             MovePickerMode::NonQuiets => {
                 for mv in generate_non_quiet_moves(pos) {
-                    let mvv = PIECE_WEIGHTS[mv.captured_piece.unwrap_or(Piece::pawn(mv.piece.colour()))];
-                    let lva = PIECE_WEIGHTS[mv.promotion_piece.unwrap_or(mv.piece)];
-                    scored_moves.push((mv, SCORE_CAPTURE - mvv * 100 + lva));
+                    let score = if let Some(victim) = mv.captured_piece {
+                        if see::see_ge(&pos.board, &mv) {
+                            SCORE_GOOD_CAPTURE + mvv_lva(victim, mv.piece)
+                        } else {
+                            SCORE_BAD_CAPTURE + mvv_lva(victim, mv.piece)
+                        }
+                    } else {
+                        SCORE_PROMOTION
+                    };
+                    scored_moves.push((mv, score));
                 }
             }
         };
@@ -108,7 +126,7 @@ mod tests {
     use crate::testing::*;
 
     #[test]
-    fn order_moves_by_mvv_lva_then_promotions_then_killers_then_history() {
+    fn order_moves_by_good_captures_mvv_lva_then_promotions_then_killers_then_history_then_bad_captures() {
         let quiet1 = make_move(Piece::WP, Square::G2, Square::G4, None);
         let quiet2 = make_move(Piece::WP, Square::G2, Square::G3, None);
         let quiet3 = make_move(Piece::WP, Square::C4, Square::C5, None);
@@ -120,6 +138,7 @@ mod tests {
         let knight_x_queen = make_move(Piece::WN, Square::F4, Square::D5, Some(Piece::BQ));
         let knight_x_rook = make_move(Piece::WN, Square::F4, Square::G6, Some(Piece::BR));
         let knight_x_knight = make_move(Piece::WN, Square::F4, Square::H3, Some(Piece::BN));
+        let knight_x_pawn = make_move(Piece::WN, Square::F4, Square::E6, Some(Piece::BP)); // Bad capture
         let promotion = make_promotion_move(Colour::White, Square::A7, Square::A8, Piece::WQ);
 
         let killer_ply = 0;
@@ -132,7 +151,7 @@ mod tests {
         history.store(-100, Piece::WP, Square::C5); // Quiet 3 is bad, score low
 
         let mut picker = MovePicker::new(
-            &parse_fen("7k/P7/6r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - - 0 1"),
+            &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - - 0 1"),
             MovePickerMode::AllMoves {
                 killers: &killers,
                 history: &history,
@@ -149,6 +168,7 @@ mod tests {
         let index_knight_x_rook = index(&knight_x_rook);
         let index_knight_x_bishop = index(&knight_x_bishop);
         let index_knight_x_knight = index(&knight_x_knight);
+        let index_knight_x_pawn = index(&knight_x_pawn); // Bad capture
         let index_pawn_x_pawn = index(&pawn_x_pawn);
         let index_promotion = index(&promotion);
         let index_killer1 = index(&killer1);
@@ -157,7 +177,7 @@ mod tests {
         let index_quiet2 = index(&quiet2);
         let index_quiet3 = index(&quiet3);
 
-        // Captures ordered by MVV/LVA.
+        // Good captures ordered by MVV/LVA.
         assert!(index_pawn_x_queen < index_knight_x_queen);
         assert!(index_knight_x_queen < index_knight_x_rook);
         assert!(index_knight_x_rook < index_knight_x_bishop);
@@ -171,6 +191,9 @@ mod tests {
         assert!(index_killer2 < index_quiet1);
         assert!(index_quiet1 < index_quiet2);
         assert!(index_quiet2 < index_quiet3);
+
+        // Bad captures last.
+        assert!(index_quiet3 < index_knight_x_pawn);
     }
 
     #[test]

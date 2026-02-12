@@ -4,8 +4,8 @@ use super::{
     tt::Bound,
     *,
 };
+use crate::attacks::is_in_check;
 use crate::colour::Colour;
-use crate::movegen::is_in_check;
 use crate::piece::Piece;
 use crate::position::Board;
 use smallvec::SmallVec;

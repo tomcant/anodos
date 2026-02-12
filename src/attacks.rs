@@ -16,73 +16,69 @@ pub fn is_in_check(colour: Colour, board: &Board) -> bool {
 
 #[inline]
 pub fn is_attacked(square: Square, colour: Colour, board: &Board) -> bool {
-    get_attackers(square, colour, board) != 0
-}
-
-#[inline]
-pub fn get_attackers(square: Square, colour: Colour, board: &Board) -> u64 {
-    let pawn_attacks = get_pawn_attacks(square, colour.flip(), board);
-    let knight_attacks = get_knight_attacks(square);
-    let bishop_attacks = get_bishop_attacks(square, board);
-    let rook_attacks = get_rook_attacks(square, board);
+    let bishop_attacks = bishop_attacks(square, board.occupancy());
+    let rook_attacks = rook_attacks(square, board.occupancy());
     let queen_attacks = bishop_attacks | rook_attacks;
-    let king_attacks = get_king_attacks(square);
 
-    (board.pieces(Piece::pawn(colour)) & pawn_attacks)
-        | (board.pieces(Piece::knight(colour)) & knight_attacks)
+    #[rustfmt::skip]
+    let attackers =
+          (board.pieces(Piece::pawn(colour)) & pawn_attacks(square, colour.flip()))
+        | (board.pieces(Piece::knight(colour)) & knight_attacks(square))
         | (board.pieces(Piece::bishop(colour)) & bishop_attacks)
         | (board.pieces(Piece::rook(colour)) & rook_attacks)
         | (board.pieces(Piece::queen(colour)) & queen_attacks)
-        | (board.pieces(Piece::king(colour)) & king_attacks)
+        | (board.pieces(Piece::king(colour)) & king_attacks(square));
+
+    attackers != 0
 }
 
 #[inline]
-pub fn get_attacks(piece: Piece, square: Square, board: &Board) -> u64 {
+pub fn attacks(piece: Piece, square: Square, board: &Board) -> u64 {
     match piece {
-        WP | BP => get_pawn_attacks(square, piece.colour(), board),
-        WN | BN => get_knight_attacks(square),
-        WB | BB => get_bishop_attacks(square, board),
-        WR | BR => get_rook_attacks(square, board),
-        WQ | BQ => get_bishop_attacks(square, board) | get_rook_attacks(square, board),
-        WK | BK => get_king_attacks(square),
+        WP | BP => pawn_attacks(square, piece.colour()) & board.pieces_by_colour(piece.colour().flip()),
+        WN | BN => knight_attacks(square),
+        WB | BB => bishop_attacks(square, board.occupancy()),
+        WR | BR => rook_attacks(square, board.occupancy()),
+        WQ | BQ => bishop_attacks(square, board.occupancy()) | rook_attacks(square, board.occupancy()),
+        WK | BK => king_attacks(square),
     }
 }
 
 #[inline]
-pub fn get_en_passant_attacks(en_passant_square: Square, colour: Colour, board: &Board) -> u64 {
+pub fn en_passant_attacks(en_passant_square: Square, colour: Colour, board: &Board) -> u64 {
     PAWN_ATTACKS[colour.flip()][en_passant_square] & board.pieces(Piece::pawn(colour))
 }
 
 #[inline]
-fn get_pawn_attacks(square: Square, colour: Colour, board: &Board) -> u64 {
-    PAWN_ATTACKS[colour][square] & board.pieces_by_colour(colour.flip())
+pub fn pawn_attacks(square: Square, colour: Colour) -> u64 {
+    PAWN_ATTACKS[colour][square]
 }
 
 #[inline]
-fn get_knight_attacks(square: Square) -> u64 {
+pub fn knight_attacks(square: Square) -> u64 {
     KNIGHT_ATTACKS[square]
 }
 
 #[inline]
-fn get_bishop_attacks(square: Square, board: &Board) -> u64 {
+pub fn bishop_attacks(square: Square, occupancy: u64) -> u64 {
     let magic = &BISHOP_MAGICS[square];
-    let occupancy = board.occupancy() & magic.mask;
-    let index = ((occupancy.wrapping_mul(magic.num)) >> magic.shift) as usize;
+    let masked = occupancy & magic.mask;
+    let index = ((masked.wrapping_mul(magic.num)) >> magic.shift) as usize;
 
     BISHOP_ATTACKS[magic.offset + index]
 }
 
 #[inline]
-fn get_rook_attacks(square: Square, board: &Board) -> u64 {
+pub fn rook_attacks(square: Square, occupancy: u64) -> u64 {
     let magic = &ROOK_MAGICS[square];
-    let occupancy = board.occupancy() & magic.mask;
-    let index = ((occupancy.wrapping_mul(magic.num)) >> magic.shift) as usize;
+    let masked = occupancy & magic.mask;
+    let index = ((masked.wrapping_mul(magic.num)) >> magic.shift) as usize;
 
     ROOK_ATTACKS[magic.offset + index]
 }
 
 #[inline]
-fn get_king_attacks(square: Square) -> u64 {
+pub fn king_attacks(square: Square) -> u64 {
     KING_ATTACKS[square]
 }
 
@@ -168,21 +164,21 @@ mod tests {
     fn attack_by_queen_horizontal() {
         let pos = parse_fen("Q3k3/8/8/8/8/8/8/8 w - - 0 1");
 
-        assert_eq!(get_attackers(Square::E8, Colour::White, &pos.board), Square::A8.u64());
+        assert!(is_attacked(Square::E8, Colour::White, &pos.board));
     }
 
     #[test]
     fn attack_by_queen_vertical() {
         let pos = parse_fen("4k3/8/8/8/4Q3/8/8/8 w - - 0 1");
 
-        assert_eq!(get_attackers(Square::E8, Colour::White, &pos.board), Square::E4.u64());
+        assert!(is_attacked(Square::E8, Colour::White, &pos.board));
     }
 
     #[test]
     fn attack_by_queen_diagonal() {
         let pos = parse_fen("4k3/8/8/8/Q7/8/8/8 w - - 0 1");
 
-        assert_eq!(get_attackers(Square::E8, Colour::White, &pos.board), Square::A4.u64());
+        assert!(is_attacked(Square::E8, Colour::White, &pos.board));
     }
 
     #[test]
@@ -362,15 +358,14 @@ mod tests {
     }
 
     fn assert_attacks_eq(pos: &Position, attacker: &str, squares: &[&str]) {
-        let attacker = attacker.parse().unwrap();
-        let attacks: u64 = squares
+        let expected_attacks: u64 = squares
             .iter()
             .map(|square| square.parse::<Square>().unwrap().u64())
             .sum();
 
-        assert_eq!(
-            attacks,
-            get_attacks(pos.board.piece_at(attacker).unwrap(), attacker, &pos.board)
-        );
+        let attacker = attacker.parse().unwrap();
+        let actual_attacks = attacks(pos.board.piece_at(attacker).unwrap(), attacker, &pos.board);
+
+        assert_eq!(expected_attacks, actual_attacks);
     }
 }

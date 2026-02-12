@@ -2,7 +2,7 @@ use super::{
     movepicker::{MovePicker, MovePickerMode},
     *,
 };
-use crate::movegen::is_in_check;
+use crate::attacks::is_in_check;
 
 pub fn search(pos: &mut Position, mut alpha: i32, beta: i32, report: &mut Report) -> i32 {
     report.nodes += 1;
