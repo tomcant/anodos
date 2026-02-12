@@ -26,7 +26,7 @@ impl Board {
         self.colours[colour]
     }
 
-    pub fn count_pieces(&self, piece: Piece) -> u32 {
+    pub fn count(&self, piece: Piece) -> u32 {
         self.pieces[piece].count_ones()
     }
 
@@ -65,31 +65,30 @@ impl Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::piece::Piece::*;
+    use crate::square::Square::*;
 
     #[test]
     fn put_a_piece_on_the_board() {
         let mut board = Board::empty();
-        let piece = Piece::WK;
-        let square = Square::E1;
 
-        board.put_piece(piece, square);
+        board.put_piece(WK, E1);
 
-        assert!(board.has_piece_at(square));
-        assert_eq!(board.piece_at(square), Some(piece));
-        assert_eq!(board.count_pieces(piece), 1);
-        assert_eq!(board.pieces_by_colour(piece.colour()) & square.u64(), square.u64());
+        assert!(board.has_piece_at(E1));
+        assert_eq!(board.piece_at(E1), Some(WK));
+        assert_eq!(board.count(WK), 1);
+        assert_eq!(board.pieces_by_colour(Colour::White) & E1.u64(), E1.u64());
     }
 
     #[test]
     fn remove_a_piece_from_the_board() {
         let mut board = Board::empty();
-        let square = Square::E1;
-        board.put_piece(Piece::WK, square);
+        board.put_piece(WK, E1);
 
-        assert!(board.has_piece_at(square));
+        assert!(board.has_piece_at(E1));
 
-        board.remove_piece(square);
+        board.remove_piece(E1);
 
-        assert!(!board.has_piece_at(square));
+        assert!(!board.has_piece_at(E1));
     }
 }

@@ -1,5 +1,5 @@
 use crate::colour::Colour;
-use crate::movegen::Move;
+use crate::r#move::Move;
 use crate::piece::Piece;
 use crate::square::Square;
 
@@ -10,7 +10,7 @@ pub struct UciMove {
     pub promotion_piece: Option<Piece>,
 }
 
-impl std::convert::From<Move> for UciMove {
+impl From<Move> for UciMove {
     fn from(m: Move) -> Self {
         UciMove {
             from: m.from,

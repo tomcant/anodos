@@ -4,7 +4,8 @@ use super::{
     see,
 };
 use crate::eval::terms::PIECE_WEIGHTS;
-use crate::movegen::{MAX_MOVES, Move, generate_all_moves, generate_non_quiet_moves};
+use crate::r#move::Move;
+use crate::movegen::{MAX_MOVES, generate_all_moves, generate_non_quiet_moves};
 use crate::piece::Piece;
 use crate::position::Position;
 use smallvec::SmallVec;
@@ -121,25 +122,25 @@ impl MovePicker {
 mod tests {
     use super::*;
     use crate::colour::Colour;
-    use crate::piece::Piece;
-    use crate::square::Square;
+    use crate::piece::Piece::*;
+    use crate::square::Square::*;
     use crate::testing::*;
 
     #[test]
     fn order_moves_by_good_captures_mvv_lva_then_promotions_then_killers_then_history_then_bad_captures() {
-        let quiet1 = make_move(Piece::WP, Square::G2, Square::G4, None);
-        let quiet2 = make_move(Piece::WP, Square::G2, Square::G3, None);
-        let quiet3 = make_move(Piece::WP, Square::C4, Square::C5, None);
-        let killer1 = make_move(Piece::WP, Square::A2, Square::A3, None);
-        let killer2 = make_move(Piece::WP, Square::B2, Square::B3, None);
-        let pawn_x_pawn = make_move(Piece::WP, Square::C4, Square::B5, Some(Piece::BP));
-        let pawn_x_queen = make_move(Piece::WP, Square::C4, Square::D5, Some(Piece::BQ));
-        let knight_x_bishop = make_move(Piece::WN, Square::F4, Square::D3, Some(Piece::BB));
-        let knight_x_queen = make_move(Piece::WN, Square::F4, Square::D5, Some(Piece::BQ));
-        let knight_x_rook = make_move(Piece::WN, Square::F4, Square::G6, Some(Piece::BR));
-        let knight_x_knight = make_move(Piece::WN, Square::F4, Square::H3, Some(Piece::BN));
-        let knight_x_pawn = make_move(Piece::WN, Square::F4, Square::E6, Some(Piece::BP)); // Bad capture
-        let promotion = make_promotion_move(Colour::White, Square::A7, Square::A8, Piece::WQ);
+        let quiet1 = make_move(WP, G2, G4, None);
+        let quiet2 = make_move(WP, G2, G3, None);
+        let quiet3 = make_move(WP, C4, C5, None);
+        let killer1 = make_move(WP, A2, A3, None);
+        let killer2 = make_move(WP, B2, B3, None);
+        let pawn_x_pawn = make_move(WP, C4, B5, Some(BP));
+        let pawn_x_queen = make_move(WP, C4, D5, Some(BQ));
+        let knight_x_bishop = make_move(WN, F4, D3, Some(BB));
+        let knight_x_queen = make_move(WN, F4, D5, Some(BQ));
+        let knight_x_rook = make_move(WN, F4, G6, Some(BR));
+        let knight_x_knight = make_move(WN, F4, H3, Some(BN));
+        let knight_x_pawn = make_move(WN, F4, E6, Some(BP)); // Bad capture
+        let promotion = make_promotion_move(Colour::White, A7, A8, WQ);
 
         let killer_ply = 0;
         let mut killers = KillerMoves::new();
@@ -147,8 +148,8 @@ mod tests {
         killers.store(killer_ply, &killer1);
 
         let mut history = HistoryTable::new();
-        history.store(100, Piece::WP, Square::G4); // Quiet 1 is good, score high
-        history.store(-100, Piece::WP, Square::C5); // Quiet 3 is bad, score low
+        history.store(100, WP, G4); // Quiet 1 is good, score high
+        history.store(-100, WP, C5); // Quiet 3 is bad, score low
 
         let mut picker = MovePicker::new(
             &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - - 0 1"),
@@ -198,14 +199,14 @@ mod tests {
 
     #[test]
     fn non_quiet_order_moves_by_good_captures_mvv_lva() {
-        let pawn_x_pawn = make_move(Piece::WP, Square::C4, Square::B5, Some(Piece::BP));
-        let pawn_x_queen = make_move(Piece::WP, Square::C4, Square::D5, Some(Piece::BQ));
-        let knight_x_bishop = make_move(Piece::WN, Square::F4, Square::D3, Some(Piece::BB));
-        let knight_x_queen = make_move(Piece::WN, Square::F4, Square::D5, Some(Piece::BQ));
-        let knight_x_rook = make_move(Piece::WN, Square::F4, Square::G6, Some(Piece::BR));
-        let knight_x_knight = make_move(Piece::WN, Square::F4, Square::H3, Some(Piece::BN));
-        let knight_x_pawn = make_move(Piece::WN, Square::F4, Square::E6, Some(Piece::BP)); // Bad capture
-        let promotion = make_promotion_move(Colour::White, Square::A7, Square::A8, Piece::WQ);
+        let pawn_x_pawn = make_move(WP, C4, B5, Some(BP));
+        let pawn_x_queen = make_move(WP, C4, D5, Some(BQ));
+        let knight_x_bishop = make_move(WN, F4, D3, Some(BB));
+        let knight_x_queen = make_move(WN, F4, D5, Some(BQ));
+        let knight_x_rook = make_move(WN, F4, G6, Some(BR));
+        let knight_x_knight = make_move(WN, F4, H3, Some(BN));
+        let knight_x_pawn = make_move(WN, F4, E6, Some(BP)); // Bad capture
+        let promotion = make_promotion_move(Colour::White, A7, A8, WQ);
 
         let mut picker = MovePicker::new(
             &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/8/4K3 w - - 0 1"),

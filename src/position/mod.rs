@@ -1,8 +1,11 @@
 use crate::attacks::en_passant_attacks;
 use crate::colour::Colour;
-use crate::movegen::Move;
+use crate::r#move::Move;
 use crate::piece::Piece::{self, *};
-use crate::square::{LIGHT_SQUARES, Square};
+use crate::square::{
+    LIGHT_SQUARES,
+    Square::{self, *},
+};
 use smallvec::SmallVec;
 
 mod board;
@@ -109,7 +112,7 @@ impl Position {
                 let rook = Piece::rook(self.colour_to_move);
 
                 match mv.to {
-                    Square::C1 | Square::C8 => {
+                    C1 | C8 => {
                         let rook_to = Square::from_file_and_rank(3, mv.to.rank());
                         let rook_from = Square::from_file_and_rank(0, mv.to.rank());
 
@@ -119,7 +122,7 @@ impl Position {
                         self.key ^= ZOBRIST.piece_square[rook][rook_to];
                         self.key ^= ZOBRIST.piece_square[rook][rook_from];
                     }
-                    Square::G1 | Square::G8 => {
+                    G1 | G8 => {
                         let rook_to = Square::from_file_and_rank(5, mv.to.rank());
                         let rook_from = Square::from_file_and_rank(7, mv.to.rank());
 
@@ -173,14 +176,14 @@ impl Position {
             let rook = Piece::rook(self.opponent_colour());
 
             match mv.to {
-                Square::C1 | Square::C8 => {
+                C1 | C8 => {
                     let rook_to = Square::from_file_and_rank(0, mv.to.rank());
                     let rook_from = Square::from_file_and_rank(3, mv.to.rank());
 
                     self.board.put_piece(rook, rook_to);
                     self.board.remove_piece(rook_from);
                 }
-                Square::G1 | Square::G8 => {
+                G1 | G8 => {
                     let rook_to = Square::from_file_and_rank(7, mv.to.rank());
                     let rook_from = Square::from_file_and_rank(5, mv.to.rank());
 
@@ -287,20 +290,20 @@ impl Position {
     pub fn has_checkmate_material(&self) -> bool {
         let board = &self.board;
 
-        if board.count_pieces(WP) != 0
-            || board.count_pieces(BP) != 0
-            || board.count_pieces(WR) != 0
-            || board.count_pieces(BR) != 0
-            || board.count_pieces(WQ) != 0
-            || board.count_pieces(BQ) != 0
+        if board.count(WP) != 0
+            || board.count(BP) != 0
+            || board.count(WR) != 0
+            || board.count(BR) != 0
+            || board.count(WQ) != 0
+            || board.count(BQ) != 0
         {
             return true;
         }
 
-        let wb = board.count_pieces(WB);
-        let bb = board.count_pieces(BB);
-        let wn = board.count_pieces(WN);
-        let bn = board.count_pieces(BN);
+        let wb = board.count(WB);
+        let bb = board.count(BB);
+        let wn = board.count(WN);
+        let bn = board.count(BN);
 
         // KNB, KNNN
         if (wb != 0 && wn != 0) || (bb != 0 && bn != 0) || wn >= 3 || bn >= 3 {
@@ -327,9 +330,9 @@ mod tests {
         let mut pos = parse_fen("8/8/8/8/8/8/8/5R2 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WR,
-            from: Square::F1,
-            to: Square::F4,
+            piece: WR,
+            from: F1,
+            to: F4,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -337,7 +340,7 @@ mod tests {
 
         pos.do_move(&mv);
 
-        assert_eq!(pos.board.piece_at(mv.to), Some(Piece::WR));
+        assert_eq!(pos.board.piece_at(mv.to), Some(WR));
         assert!(!pos.board.has_piece_at(mv.from));
         assert_eq!(pos.colour_to_move, Colour::Black);
     }
@@ -347,9 +350,9 @@ mod tests {
         let mut pos = parse_fen("4k3/8/8/8/8/8/8/4KR2 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WR,
-            from: Square::F1,
-            to: Square::F4,
+            piece: WR,
+            from: F1,
+            to: F4,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -358,7 +361,7 @@ mod tests {
 
         pos.undo_move(&mv);
 
-        assert_eq!(pos.board.piece_at(mv.from), Some(Piece::WR));
+        assert_eq!(pos.board.piece_at(mv.from), Some(WR));
         assert!(!pos.board.has_piece_at(mv.to));
         assert_eq!(pos.colour_to_move, Colour::White);
     }
@@ -368,17 +371,17 @@ mod tests {
         let mut pos = parse_fen("8/8/8/5p2/3N4/8/8/8 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WN,
-            from: Square::D4,
-            to: Square::F5,
-            captured_piece: Some(Piece::BP),
+            piece: WN,
+            from: D4,
+            to: F5,
+            captured_piece: Some(BP),
             promotion_piece: None,
             is_en_passant: false,
         };
 
         pos.do_move(&mv);
 
-        assert_eq!(pos.board.piece_at(mv.to), Some(Piece::WN));
+        assert_eq!(pos.board.piece_at(mv.to), Some(WN));
         assert!(!pos.board.has_piece_at(mv.from));
     }
 
@@ -387,10 +390,10 @@ mod tests {
         let mut pos = parse_fen("4k3/8/8/5p2/3N4/8/8/4K3 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WN,
-            from: Square::D4,
-            to: Square::F5,
-            captured_piece: Some(Piece::BP),
+            piece: WN,
+            from: D4,
+            to: F5,
+            captured_piece: Some(BP),
             promotion_piece: None,
             is_en_passant: false,
         };
@@ -398,8 +401,8 @@ mod tests {
 
         pos.undo_move(&mv);
 
-        assert_eq!(pos.board.piece_at(mv.from), Some(Piece::WN));
-        assert_eq!(pos.board.piece_at(mv.to), Some(Piece::BP));
+        assert_eq!(pos.board.piece_at(mv.from), Some(WN));
+        assert_eq!(pos.board.piece_at(mv.to), Some(BP));
     }
 
     #[test]
@@ -407,9 +410,9 @@ mod tests {
         let mut pos = parse_fen("8/8/8/8/8/8/8/4K2R w K - 0 1");
 
         let mv = Move {
-            piece: Piece::WK,
-            from: Square::E1,
-            to: Square::G1,
+            piece: WK,
+            from: E1,
+            to: G1,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -419,11 +422,11 @@ mod tests {
 
         assert_eq!(pos.castling_rights, CastlingRights::none());
 
-        assert_eq!(pos.board.piece_at(mv.to), Some(Piece::WK));
-        assert_eq!(pos.board.piece_at(Square::F1), Some(Piece::WR));
+        assert_eq!(pos.board.piece_at(mv.to), Some(WK));
+        assert_eq!(pos.board.piece_at(F1), Some(WR));
 
         assert!(!pos.board.has_piece_at(mv.from));
-        assert!(!pos.board.has_piece_at(Square::H1));
+        assert!(!pos.board.has_piece_at(H1));
     }
 
     #[test]
@@ -431,9 +434,9 @@ mod tests {
         let mut pos = parse_fen("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
 
         let mv = Move {
-            piece: Piece::WK,
-            from: Square::E1,
-            to: Square::G1,
+            piece: WK,
+            from: E1,
+            to: G1,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -444,11 +447,11 @@ mod tests {
 
         assert_eq!(pos.castling_rights, CastlingRights::from(&[CastlingRight::WhiteKing]));
 
-        assert_eq!(pos.board.piece_at(mv.from), Some(Piece::WK));
-        assert_eq!(pos.board.piece_at(Square::H1), Some(Piece::WR));
+        assert_eq!(pos.board.piece_at(mv.from), Some(WK));
+        assert_eq!(pos.board.piece_at(H1), Some(WR));
 
         assert!(!pos.board.has_piece_at(mv.to));
-        assert!(!pos.board.has_piece_at(Square::F1));
+        assert!(!pos.board.has_piece_at(F1));
     }
 
     #[test]
@@ -456,9 +459,9 @@ mod tests {
         let mut pos = parse_fen("8/8/8/8/8/8/8/R3K2R w KQ - 0 1");
 
         let mv = Move {
-            piece: Piece::WR,
-            from: Square::H1,
-            to: Square::G1,
+            piece: WR,
+            from: H1,
+            to: G1,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -474,10 +477,10 @@ mod tests {
         let mut pos = parse_fen("8/8/8/8/3b4/8/8/R3K2R b KQ - 0 1");
 
         let mv = Move {
-            piece: Piece::BB,
-            from: Square::D4,
-            to: Square::A1,
-            captured_piece: Some(Piece::WR),
+            piece: BB,
+            from: D4,
+            to: A1,
+            captured_piece: Some(WR),
             promotion_piece: None,
             is_en_passant: false,
         };
@@ -492,11 +495,11 @@ mod tests {
         let mut pos = parse_fen("8/4P3/8/8/8/8/8/8 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::E7,
-            to: Square::E8,
+            piece: WP,
+            from: E7,
+            to: E8,
             captured_piece: None,
-            promotion_piece: Some(Piece::WN),
+            promotion_piece: Some(WN),
             is_en_passant: false,
         };
 
@@ -511,18 +514,18 @@ mod tests {
         let mut pos = parse_fen("4k3/2P5/8/8/8/8/8/4K3 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::C7,
-            to: Square::C8,
+            piece: WP,
+            from: C7,
+            to: C8,
             captured_piece: None,
-            promotion_piece: Some(Piece::WN),
+            promotion_piece: Some(WN),
             is_en_passant: false,
         };
         pos.do_move(&mv);
 
         pos.undo_move(&mv);
 
-        assert_eq!(pos.board.piece_at(mv.from), Some(Piece::WP));
+        assert_eq!(pos.board.piece_at(mv.from), Some(WP));
         assert!(!pos.board.has_piece_at(mv.to));
     }
 
@@ -531,18 +534,18 @@ mod tests {
         let mut pos = parse_fen("1n2k3/2P5/8/8/8/8/8/4K3 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::C7,
-            to: Square::B8,
-            captured_piece: Some(Piece::BN),
-            promotion_piece: Some(Piece::WN),
+            piece: WP,
+            from: C7,
+            to: B8,
+            captured_piece: Some(BN),
+            promotion_piece: Some(WN),
             is_en_passant: false,
         };
         pos.do_move(&mv);
 
         pos.undo_move(&mv);
 
-        assert_eq!(pos.board.piece_at(mv.from), Some(Piece::WP));
+        assert_eq!(pos.board.piece_at(mv.from), Some(WP));
         assert_eq!(pos.board.piece_at(mv.to), mv.captured_piece);
     }
 
@@ -551,18 +554,18 @@ mod tests {
         let mut pos = parse_fen("8/8/8/3Pp3/8/8/8/8 w - e6 0 1");
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::D5,
-            to: Square::E6,
-            captured_piece: Some(Piece::BP),
+            piece: WP,
+            from: D5,
+            to: E6,
+            captured_piece: Some(BP),
             promotion_piece: None,
             is_en_passant: true,
         };
 
         pos.do_move(&mv);
 
-        assert_eq!(pos.board.piece_at(mv.to), Some(Piece::WP));
-        assert!(!pos.board.has_piece_at(Square::E5));
+        assert_eq!(pos.board.piece_at(mv.to), Some(WP));
+        assert!(!pos.board.has_piece_at(E5));
         assert!(!pos.board.has_piece_at(mv.from));
     }
 
@@ -571,10 +574,10 @@ mod tests {
         let mut pos = parse_fen("4k3/8/8/3Pp3/8/8/8/4K3 w - e6 0 1");
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::D5,
-            to: Square::E6,
-            captured_piece: Some(Piece::BP),
+            piece: WP,
+            from: D5,
+            to: E6,
+            captured_piece: Some(BP),
             promotion_piece: None,
             is_en_passant: true,
         };
@@ -583,8 +586,8 @@ mod tests {
         pos.undo_move(&mv);
 
         assert_eq!(pos.en_passant_square, Some(mv.to));
-        assert_eq!(pos.board.piece_at(mv.from), Some(Piece::WP));
-        assert_eq!(pos.board.piece_at(Square::E5), Some(Piece::BP));
+        assert_eq!(pos.board.piece_at(mv.from), Some(WP));
+        assert_eq!(pos.board.piece_at(E5), Some(BP));
         assert!(!pos.board.has_piece_at(mv.to));
     }
 
@@ -593,9 +596,9 @@ mod tests {
         let mut pos = parse_fen("8/8/8/8/8/8/4P3/8 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::E2,
-            to: Square::E4,
+            piece: WP,
+            from: E2,
+            to: E4,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -603,7 +606,7 @@ mod tests {
 
         pos.do_move(&mv);
 
-        assert_eq!(pos.en_passant_square, Some(Square::E3));
+        assert_eq!(pos.en_passant_square, Some(E3));
     }
 
     #[test]
@@ -611,9 +614,9 @@ mod tests {
         let mut pos = parse_fen("8/4p3/8/8/8/8/8/8 b - - 0 1");
 
         let mv = Move {
-            piece: Piece::BP,
-            from: Square::E7,
-            to: Square::E5,
+            piece: BP,
+            from: E7,
+            to: E5,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -621,7 +624,7 @@ mod tests {
 
         pos.do_move(&mv);
 
-        assert_eq!(pos.en_passant_square, Some(Square::E6));
+        assert_eq!(pos.en_passant_square, Some(E6));
     }
 
     #[test]
@@ -629,9 +632,9 @@ mod tests {
         let mut pos = Position::startpos();
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::E2,
-            to: Square::E4,
+            piece: WP,
+            from: E2,
+            to: E4,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -648,9 +651,9 @@ mod tests {
         let mut pos = Position::startpos();
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::E2,
-            to: Square::E4,
+            piece: WP,
+            from: E2,
+            to: E4,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -658,9 +661,9 @@ mod tests {
         pos.do_move(&mv);
 
         let mv = Move {
-            piece: Piece::BN,
-            from: Square::G8,
-            to: Square::F6,
+            piece: BN,
+            from: G8,
+            to: F6,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -669,7 +672,7 @@ mod tests {
 
         pos.undo_move(&mv);
 
-        assert_eq!(pos.en_passant_square, Some(Square::E3));
+        assert_eq!(pos.en_passant_square, Some(E3));
     }
 
     #[test]
@@ -677,9 +680,9 @@ mod tests {
         let mut pos = parse_fen("8/4p3/8/8/8/8/4P3/4K3 w - - 0 1");
 
         let mv = Move {
-            piece: Piece::WK,
-            from: Square::E1,
-            to: Square::F2,
+            piece: WK,
+            from: E1,
+            to: F2,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -695,9 +698,9 @@ mod tests {
         let mut pos = parse_fen("8/4p3/8/8/8/8/4P3/8 w - - 1 1");
 
         let mv = Move {
-            piece: Piece::WP,
-            from: Square::E2,
-            to: Square::E4,
+            piece: WP,
+            from: E2,
+            to: E4,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -713,10 +716,10 @@ mod tests {
         let mut pos = parse_fen("8/4p3/8/8/8/8/4Q3/8 w - - 1 1");
 
         let mv = Move {
-            piece: Piece::WQ,
-            from: Square::E2,
-            to: Square::E7,
-            captured_piece: Some(Piece::BP),
+            piece: WQ,
+            from: E2,
+            to: E7,
+            captured_piece: Some(BP),
             promotion_piece: None,
             is_en_passant: false,
         };
@@ -733,9 +736,9 @@ mod tests {
         assert_eq!(pos.full_move_counter, 1);
 
         let white_move = Move {
-            piece: Piece::WP,
-            from: Square::E2,
-            to: Square::E4,
+            piece: WP,
+            from: E2,
+            to: E4,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -745,9 +748,9 @@ mod tests {
         assert_eq!(pos.full_move_counter, 1);
 
         let black_move = Move {
-            piece: Piece::BP,
-            from: Square::E7,
-            to: Square::E5,
+            piece: BP,
+            from: E7,
+            to: E5,
             captured_piece: None,
             promotion_piece: None,
             is_en_passant: false,
@@ -770,14 +773,14 @@ mod tests {
         let mut pos = Position::startpos();
 
         let mut moves = [
-            make_move(Piece::WN, Square::G1, Square::F3, None), // Nf3
-            make_move(Piece::BN, Square::G8, Square::F6, None), // Nf6
-            make_move(Piece::WN, Square::F3, Square::G1, None), // Ng1
-            make_move(Piece::BN, Square::F6, Square::G8, None), // Ng8, first repetition
-            make_move(Piece::WN, Square::G1, Square::F3, None), // Nf3
-            make_move(Piece::BN, Square::G8, Square::F6, None), // Nf6
-            make_move(Piece::WN, Square::F3, Square::G1, None), // Ng1
-            make_move(Piece::BN, Square::F6, Square::G8, None), // Ng8, second repetition, threefold
+            make_move(WN, G1, F3, None), // Nf3
+            make_move(BN, G8, F6, None), // Nf6
+            make_move(WN, F3, G1, None), // Ng1
+            make_move(BN, F6, G8, None), // Ng8, first repetition
+            make_move(WN, G1, F3, None), // Nf3
+            make_move(BN, G8, F6, None), // Nf6
+            make_move(WN, F3, G1, None), // Ng1
+            make_move(BN, F6, G8, None), // Ng8, second repetition, threefold
         ];
 
         for (index, mv) in moves.iter_mut().enumerate() {
@@ -799,14 +802,14 @@ mod tests {
         let mut pos = parse_fen("1r1q1rk1/2p2pp1/2Q4p/pB2P3/P2P4/b6P/2R2PP1/3R2K1 b - - 10 33");
 
         let mut moves = [
-            make_move(Piece::BR, Square::B8, Square::C8, None), // Rc8
-            make_move(Piece::WB, Square::B5, Square::A6, None), // Ba6
-            make_move(Piece::BR, Square::C8, Square::B8, None), // Rb8
-            make_move(Piece::WB, Square::A6, Square::B5, None), // Bb5, first repetition
-            make_move(Piece::BR, Square::B8, Square::C8, None), // Rc8
-            make_move(Piece::WB, Square::B5, Square::A6, None), // Ba6
-            make_move(Piece::BR, Square::C8, Square::B8, None), // Rb8
-            make_move(Piece::WB, Square::A6, Square::B5, None), // Bb5, second repetition, threefold
+            make_move(BR, B8, C8, None), // Rc8
+            make_move(WB, B5, A6, None), // Ba6
+            make_move(BR, C8, B8, None), // Rb8
+            make_move(WB, A6, B5, None), // Bb5, first repetition
+            make_move(BR, B8, C8, None), // Rc8
+            make_move(WB, B5, A6, None), // Ba6
+            make_move(BR, C8, B8, None), // Rb8
+            make_move(WB, A6, B5, None), // Bb5, second repetition, threefold
         ];
 
         for (index, mv) in moves.iter_mut().enumerate() {
@@ -828,15 +831,15 @@ mod tests {
         let mut pos = Position::startpos();
 
         let mut moves = [
-            make_move(Piece::WN, Square::G1, Square::F3, None), // Nf3, the pieces revisit these squares later
-            make_move(Piece::BN, Square::G8, Square::F6, None), // Nf6
-            make_move(Piece::WR, Square::H1, Square::G1, None), // Rg1, removes white king-side castling rights
-            make_move(Piece::BN, Square::F6, Square::G8, None), // Ng8
-            make_move(Piece::WR, Square::G1, Square::H1, None), // Rh1, first repetition of piece placement
-            make_move(Piece::BN, Square::G8, Square::F6, None), // Nf6
-            make_move(Piece::WN, Square::F3, Square::G1, None), // Ng1
-            make_move(Piece::BN, Square::F6, Square::G8, None), // Ng8
-            make_move(Piece::WN, Square::G1, Square::F3, None), // Nf3, second repetition but doesn't count due to castling rights
+            make_move(WN, G1, F3, None), // Nf3, the pieces revisit these squares later
+            make_move(BN, G8, F6, None), // Nf6
+            make_move(WR, H1, G1, None), // Rg1, removes white king-side castling rights
+            make_move(BN, F6, G8, None), // Ng8
+            make_move(WR, G1, H1, None), // Rh1, first repetition of piece placement
+            make_move(BN, G8, F6, None), // Nf6
+            make_move(WN, F3, G1, None), // Ng1
+            make_move(BN, F6, G8, None), // Ng8
+            make_move(WN, G1, F3, None), // Nf3, second repetition but doesn't count due to castling rights
         ];
 
         for (index, mv) in moves.iter_mut().enumerate() {
@@ -855,16 +858,16 @@ mod tests {
         let mut pos = parse_fen("4k3/4p3/8/3P4/8/8/8/4K1Nn w - - 0 1");
 
         let mut moves = [
-            make_move(Piece::WN, Square::G1, Square::F3, None), // Nf3
-            make_move(Piece::BP, Square::E7, Square::E5, None), // e5, the pieces revisit these squares later
-            make_move(Piece::WN, Square::F3, Square::G1, None), // Ng1, en passant availability expires
-            make_move(Piece::BN, Square::H1, Square::G3, None), // Ng3
-            make_move(Piece::WN, Square::G1, Square::F3, None), // Nf3
-            make_move(Piece::BN, Square::G3, Square::H1, None), // Nh1, first repetition of piece placement
-            make_move(Piece::WN, Square::F3, Square::G1, None), // Ng1
-            make_move(Piece::BN, Square::H1, Square::G3, None), // Ng3
-            make_move(Piece::WN, Square::G1, Square::F3, None), // Nf3
-            make_move(Piece::BN, Square::G3, Square::H1, None), // Nh1, second repetition but doesn't count due to en passant availability
+            make_move(WN, G1, F3, None), // Nf3
+            make_move(BP, E7, E5, None), // e5, the pieces revisit these squares later
+            make_move(WN, F3, G1, None), // Ng1, en passant availability expires
+            make_move(BN, H1, G3, None), // Ng3
+            make_move(WN, G1, F3, None), // Nf3
+            make_move(BN, G3, H1, None), // Nh1, first repetition of piece placement
+            make_move(WN, F3, G1, None), // Ng1
+            make_move(BN, H1, G3, None), // Ng3
+            make_move(WN, G1, F3, None), // Nf3
+            make_move(BN, G3, H1, None), // Nh1, second repetition but doesn't count due to en passant availability
         ];
 
         for (index, mv) in moves.iter_mut().enumerate() {

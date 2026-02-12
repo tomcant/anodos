@@ -293,10 +293,10 @@ pub fn search(
 
 #[inline]
 fn has_non_pawn_material(board: &Board, colour: Colour) -> bool {
-    let knights = board.count_pieces(Piece::knight(colour));
-    let bishops = board.count_pieces(Piece::bishop(colour));
-    let rooks = board.count_pieces(Piece::rook(colour));
-    let queens = board.count_pieces(Piece::queen(colour));
+    let knights = board.count(Piece::knight(colour));
+    let bishops = board.count(Piece::bishop(colour));
+    let rooks = board.count(Piece::rook(colour));
+    let queens = board.count(Piece::queen(colour));
 
     (knights + bishops + rooks + queens) > 0
 }

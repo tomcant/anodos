@@ -1,7 +1,7 @@
 use crate::attacks::{bishop_attacks, king_attacks, knight_attacks, pawn_attacks, rook_attacks};
 use crate::colour::Colour;
 use crate::eval::terms::PIECE_WEIGHTS;
-use crate::movegen::Move;
+use crate::r#move::Move;
 use crate::piece::Piece::{self, *};
 use crate::position::Board;
 use crate::square::Square;
@@ -120,23 +120,24 @@ lazy_static! {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::square::Square::*;
     use crate::testing::*;
 
     #[test]
     fn good_captures() {
         #[rustfmt::skip]
         let cases = [
-            ("4R3/2r3p1/5bk1/1p1r3p/p2PR1P1/P1BK1P2/1P6/8 b - - 0 1", Square::H5, Square::G4),
-            ("4R3/2r3p1/5bk1/1p1r1p1p/p2PR1P1/P1BK1P2/1P6/8 b - - 0 1", Square::H5, Square::G4),
-            ("2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - - 0 1", Square::D6, Square::E5),
-            ("8/4kp2/2npp3/1Nn5/1p2PQP1/7q/1PP1B3/4KR1r b - - 0 1", Square::H1, Square::F1),
-            ("2r2r1k/6bp/p7/2q2p1Q/3PpP2/1B6/P5PP/2RR3K b - - 0 1", Square::C5, Square::C1),
-            ("r2qk1nr/pp2ppbp/2b3p1/2p1p3/8/2N2N2/PPPP1PPP/R1BQR1K1 w kq - 0 1", Square::F3, Square::E5),
-            ("6r1/4kq2/b2p1p2/p1pPb3/p1P2B1Q/2P4P/2B1R1P1/6K1 w - - 0 1", Square::F4, Square::E5),
-            ("2r4r/1P4pk/p2p1b1p/7n/BB3p2/2R2p2/P1P2P2/4RK2 w - - 0 1", Square::C3, Square::C8),
-            ("2r4k/2r4p/p7/2b2p1b/4pP2/1BR5/P1R3PP/2Q4K w - - 0 1", Square::C3, Square::C5),
-            ("4q3/1p1pr1kb/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - - 0 1", Square::H7, Square::E4),
-            ("7k/P7/6r1/1p1q4/1QP2N2/3b3n/PP4P1/4K3 w - - 0 1", Square::B4, Square::B5),
+            ("4R3/2r3p1/5bk1/1p1r3p/p2PR1P1/P1BK1P2/1P6/8 b - - 0 1", H5, G4),
+            ("4R3/2r3p1/5bk1/1p1r1p1p/p2PR1P1/P1BK1P2/1P6/8 b - - 0 1", H5, G4),
+            ("2r1r1k1/pp1bppbp/3p1np1/q3P3/2P2P2/1P2B3/P1N1B1PP/2RQ1RK1 b - - 0 1", D6, E5),
+            ("8/4kp2/2npp3/1Nn5/1p2PQP1/7q/1PP1B3/4KR1r b - - 0 1", H1, F1),
+            ("2r2r1k/6bp/p7/2q2p1Q/3PpP2/1B6/P5PP/2RR3K b - - 0 1", C5, C1),
+            ("r2qk1nr/pp2ppbp/2b3p1/2p1p3/8/2N2N2/PPPP1PPP/R1BQR1K1 w kq - 0 1", F3, E5),
+            ("6r1/4kq2/b2p1p2/p1pPb3/p1P2B1Q/2P4P/2B1R1P1/6K1 w - - 0 1", F4, E5),
+            ("2r4r/1P4pk/p2p1b1p/7n/BB3p2/2R2p2/P1P2P2/4RK2 w - - 0 1", C3, C8),
+            ("2r4k/2r4p/p7/2b2p1b/4pP2/1BR5/P1R3PP/2Q4K w - - 0 1", C3, C5),
+            ("4q3/1p1pr1kb/1B2rp2/6p1/p3PP2/P3R1P1/1P2R1K1/4Q3 b - - 0 1", H7, E4),
+            ("7k/P7/6r1/1p1q4/1QP2N2/3b3n/PP4P1/4K3 w - - 0 1", B4, B5),
         ];
         for (fen, from, to) in cases {
             let pos = parse_fen(fen);
@@ -148,8 +149,8 @@ mod tests {
 
         #[rustfmt::skip]
         let en_passant_cases = [
-            ("3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R4B/PQ3P1P/3R2K1 w - h6 0 1", Square::G5, Square::H6),
-            ("3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R1B2B/PQ3P1P/3R2K1 w - h6 0 1", Square::G5, Square::H6),
+            ("3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R4B/PQ3P1P/3R2K1 w - h6 0 1", G5, H6),
+            ("3q2nk/pb1r1p2/np6/3P2Pp/2p1P3/2R1B2B/PQ3P1P/3R2K1 w - h6 0 1", G5, H6),
         ];
         for (fen, from, to) in en_passant_cases {
             let mv = make_en_passant_move(Colour::White, from, to);
@@ -161,11 +162,11 @@ mod tests {
     fn bad_captures() {
         #[rustfmt::skip]
         let cases = [
-            ("4k3/6q1/5b2/4p3/8/2B5/1Q6/4K3 w - - 0 1", Square::C3, Square::E5),
-            ("3qk3/3r4/3r4/8/3P4/3R4/3R4/3QK3 b - - 0 1", Square::D6, Square::D4),
-            ("4k3/5p2/4p3/8/2B5/1Q6/8/4K3 w - - 0 1", Square::C4, Square::E6),
-            ("4k3/5p2/4p3/8/8/4R3/4R3/4K3 w - - 0 1", Square::E3, Square::E6),
-            ("4r1k1/5pp1/nbp4p/1p2p2q/1P2P1b1/1BP2N1P/1B2QPPK/3R4 b - - 0 1", Square::G4, Square::F3),
+            ("4k3/6q1/5b2/4p3/8/2B5/1Q6/4K3 w - - 0 1", C3, E5),
+            ("3qk3/3r4/3r4/8/3P4/3R4/3R4/3QK3 b - - 0 1", D6, D4),
+            ("4k3/5p2/4p3/8/2B5/1Q6/8/4K3 w - - 0 1", C4, E6),
+            ("4k3/5p2/4p3/8/8/4R3/4R3/4K3 w - - 0 1", E3, E6),
+            ("4r1k1/5pp1/nbp4p/1p2p2q/1P2P1b1/1BP2N1P/1B2QPPK/3R4 b - - 0 1", G4, F3),
         ];
         for (fen, from, to) in cases {
             let pos = parse_fen(fen);

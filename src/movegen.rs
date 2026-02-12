@@ -1,15 +1,14 @@
 use crate::attacks::{attacks, en_passant_attacks, is_attacked, is_in_check};
 use crate::colour::Colour;
+use crate::r#move::Move;
 use crate::piece::Piece;
 use crate::position::{Board, CastlingRight, CastlingRights, Position};
-use crate::square::{BACK_RANKS, Square};
+use crate::square::{
+    BACK_RANKS,
+    Square::{self, *},
+};
 use lazy_static::lazy_static;
 use smallvec::SmallVec;
-
-mod r#move;
-pub mod perft;
-
-pub use r#move::Move;
 
 pub const MAX_MOVES: usize = 128;
 pub type MoveList = SmallVec<[Move; MAX_MOVES]>;
@@ -17,10 +16,10 @@ pub type MoveList = SmallVec<[Move; MAX_MOVES]>;
 const PAWN_START_RANKS: [u8; 2] = [1, 6];
 
 lazy_static! {
-    static ref WHITE_KING_CASTLING_PATH: u64 = Square::F1.u64() | Square::G1.u64();
-    static ref BLACK_KING_CASTLING_PATH: u64 = Square::F8.u64() | Square::G8.u64();
-    static ref WHITE_QUEEN_CASTLING_PATH: u64 = Square::B1.u64() | Square::C1.u64() | Square::D1.u64();
-    static ref BLACK_QUEEN_CASTLING_PATH: u64 = Square::B8.u64() | Square::C8.u64() | Square::D8.u64();
+    static ref WHITE_KING_CASTLING_PATH: u64 = F1.u64() | G1.u64();
+    static ref BLACK_KING_CASTLING_PATH: u64 = F8.u64() | G8.u64();
+    static ref WHITE_QUEEN_CASTLING_PATH: u64 = B1.u64() | C1.u64() | D1.u64();
+    static ref BLACK_QUEEN_CASTLING_PATH: u64 = B8.u64() | C8.u64() | D8.u64();
 }
 
 pub fn generate_all_moves(pos: &Position) -> MoveList {
@@ -194,16 +193,16 @@ fn white_castling(rights: CastlingRights, board: &Board) -> u64 {
 
     if rights.has(CastlingRight::WhiteKing)
         && !board.has_occupancy_at(*WHITE_KING_CASTLING_PATH)
-        && !is_attacked(Square::F1, Colour::Black, board)
+        && !is_attacked(F1, Colour::Black, board)
     {
-        castling |= Square::G1.u64();
+        castling |= G1.u64();
     }
 
     if rights.has(CastlingRight::WhiteQueen)
         && !board.has_occupancy_at(*WHITE_QUEEN_CASTLING_PATH)
-        && !is_attacked(Square::D1, Colour::Black, board)
+        && !is_attacked(D1, Colour::Black, board)
     {
-        castling |= Square::C1.u64();
+        castling |= C1.u64();
     }
 
     castling
@@ -214,16 +213,16 @@ fn black_castling(rights: CastlingRights, board: &Board) -> u64 {
 
     if rights.has(CastlingRight::BlackKing)
         && !board.has_occupancy_at(*BLACK_KING_CASTLING_PATH)
-        && !is_attacked(Square::F8, Colour::White, board)
+        && !is_attacked(F8, Colour::White, board)
     {
-        castling |= Square::G8.u64();
+        castling |= G8.u64();
     }
 
     if rights.has(CastlingRight::BlackQueen)
         && !board.has_occupancy_at(*BLACK_QUEEN_CASTLING_PATH)
-        && !is_attacked(Square::D8, Colour::White, board)
+        && !is_attacked(D8, Colour::White, board)
     {
-        castling |= Square::C8.u64();
+        castling |= C8.u64();
     }
 
     castling
@@ -372,8 +371,8 @@ mod tests {
 
         let castling_move = moves.iter().filter(|mv| mv.is_castling()).next().unwrap();
 
-        assert_eq!(castling_move.from, Square::E1);
-        assert_eq!(castling_move.to, Square::C1);
+        assert_eq!(castling_move.from, E1);
+        assert_eq!(castling_move.to, C1);
     }
 
     #[test]

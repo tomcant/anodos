@@ -178,8 +178,8 @@ fn parse_duration_attr(attr: &str, value: &str) -> Result<Duration, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::piece::Piece;
-    use crate::square::Square;
+    use crate::piece::Piece::*;
+    use crate::square::Square::*;
     use crate::uci::r#move::UciMove;
 
     #[test]
@@ -235,8 +235,8 @@ mod tests {
             Ok(Position(
                 START_POS_FEN.to_string(),
                 vec![UciMove {
-                    from: Square::E2,
-                    to: Square::E4,
+                    from: E2,
+                    to: E4,
                     promotion_piece: None
                 }]
             ))
@@ -248,13 +248,13 @@ mod tests {
                 "4k3/8/8/8/8/8/8/4K3 w - - 0 1".to_string(),
                 vec![
                     UciMove {
-                        from: Square::D2,
-                        to: Square::D4,
+                        from: D2,
+                        to: D4,
                         promotion_piece: None
                     },
                     UciMove {
-                        from: Square::E7,
-                        to: Square::E6,
+                        from: E7,
+                        to: E6,
                         promotion_piece: None
                     }
                 ]
@@ -266,9 +266,9 @@ mod tests {
             Ok(Position(
                 START_POS_FEN.to_string(),
                 vec![UciMove {
-                    from: Square::E7,
-                    to: Square::E8,
-                    promotion_piece: Some(Piece::WQ)
+                    from: E7,
+                    to: E8,
+                    promotion_piece: Some(WQ)
                 }]
             ))
         );
@@ -278,9 +278,9 @@ mod tests {
             Ok(Position(
                 START_POS_FEN.to_string(),
                 vec![UciMove {
-                    from: Square::E2,
-                    to: Square::E1,
-                    promotion_piece: Some(Piece::BR)
+                    from: E2,
+                    to: E1,
+                    promotion_piece: Some(BR)
                 }]
             ))
         );

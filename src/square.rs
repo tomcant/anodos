@@ -21,42 +21,36 @@ pub const FILES: [u64; 8] = [
     FILE_A << 7,
 ];
 
+#[rustfmt::skip]
+#[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Square(u8);
+pub enum Square {
+    A1, B1, C1, D1, E1, F1, G1, H1,
+    A2, B2, C2, D2, E2, F2, G2, H2,
+    A3, B3, C3, D3, E3, F3, G3, H3,
+    A4, B4, C4, D4, E4, F4, G4, H4,
+    A5, B5, C5, D5, E5, F5, G5, H5,
+    A6, B6, C6, D6, E6, F6, G6, H6,
+    A7, B7, C7, D7, E7, F7, G7, H7,
+    A8, B8, C8, D8, E8, F8, G8, H8,
+}
 
 impl Square {
-    pub const A1: Self = Self(0);
-    pub const B1: Self = Self(1);
-    pub const C1: Self = Self(2);
-    pub const D1: Self = Self(3);
-    pub const E1: Self = Self(4);
-    pub const F1: Self = Self(5);
-    pub const G1: Self = Self(6);
-    pub const H1: Self = Self(7);
-
-    pub const A8: Self = Self(56);
-    pub const B8: Self = Self(57);
-    pub const C8: Self = Self(58);
-    pub const D8: Self = Self(59);
-    pub const E8: Self = Self(60);
-    pub const F8: Self = Self(61);
-    pub const G8: Self = Self(62);
-    pub const H8: Self = Self(63);
-
     pub const fn from_index(index: u8) -> Self {
-        Self(index)
+        debug_assert!(index < 64);
+        unsafe { std::mem::transmute(index) }
     }
 
     pub fn from_file_and_rank(file: u8, rank: u8) -> Self {
-        Self(rank << 3 | file)
+        Self::from_index(rank << 3 | file)
     }
 
     pub fn first(squares: u64) -> Self {
-        Self(squares.trailing_zeros() as u8)
+        Self::from_index(squares.trailing_zeros() as u8)
     }
 
     pub fn last(squares: u64) -> Self {
-        Self(63 - squares.leading_zeros() as u8)
+        Self::from_index(63 - squares.leading_zeros() as u8)
     }
 
     pub fn next(squares: &mut u64) -> Self {
@@ -66,19 +60,19 @@ impl Square {
     }
 
     pub fn index(&self) -> u8 {
-        self.0
+        *self as u8
     }
 
     pub fn u64(&self) -> u64 {
-        1 << self.0
+        1 << (*self as u8)
     }
 
     pub fn file(&self) -> u8 {
-        self.0 & 7
+        *self as u8 & 7
     }
 
     pub fn rank(&self) -> u8 {
-        self.0 >> 3
+        *self as u8 >> 3
     }
 
     pub fn file_diff(&self, other: Square) -> u8 {
@@ -91,8 +85,8 @@ impl Square {
 
     pub fn advance(&self, colour: Colour) -> Self {
         match colour {
-            Colour::White => Self(self.0 + 8),
-            _ => Self(self.0 - 8),
+            Colour::White => Self::from_index(*self as u8 + 8),
+            _ => Self::from_index(*self as u8 - 8),
         }
     }
 
@@ -109,13 +103,13 @@ impl<T> std::ops::Index<Square> for [T; 64] {
     type Output = T;
 
     fn index(&self, square: Square) -> &Self::Output {
-        &self[square.0 as usize]
+        &self[square as usize]
     }
 }
 
 impl<T> std::ops::IndexMut<Square> for [T; 64] {
     fn index_mut(&mut self, square: Square) -> &mut Self::Output {
-        &mut self[square.0 as usize]
+        &mut self[square as usize]
     }
 }
 
@@ -148,44 +142,45 @@ impl std::str::FromStr for Square {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::Square::{self, *};
+    use crate::colour::Colour;
 
     #[test]
     fn create_from_a_file_and_a_rank() {
-        assert_eq!(Square::from_file_and_rank(0, 0), Square::A1);
-        assert_eq!(Square::from_file_and_rank(7, 7), Square::H8);
+        assert_eq!(Square::from_file_and_rank(0, 0), A1);
+        assert_eq!(Square::from_file_and_rank(7, 7), H8);
         assert_eq!(Square::from_file_and_rank(1, 4), Square::from_index(33));
     }
 
     #[test]
     fn create_from_algebraic_notation() {
-        assert_eq!("a1".parse::<Square>(), Ok(Square::A1));
-        assert_eq!("h8".parse::<Square>(), Ok(Square::H8));
+        assert_eq!("a1".parse::<Square>(), Ok(A1));
+        assert_eq!("h8".parse::<Square>(), Ok(H8));
         assert_eq!("b5".parse::<Square>(), Ok(Square::from_index(33)));
     }
 
     #[test]
     fn create_from_first_bit_in_a_bitboard() {
-        let bitboard = Square::A1.u64() | Square::A8.u64();
+        let bitboard = A1.u64() | A8.u64();
 
-        assert_eq!(Square::first(bitboard), Square::A1);
+        assert_eq!(Square::first(bitboard), A1);
     }
 
     #[test]
     fn create_from_last_bit_in_a_bitboard() {
-        let bitboard = Square::A1.u64() | Square::A8.u64();
+        let bitboard = A1.u64() | A8.u64();
 
-        assert_eq!(Square::last(bitboard), Square::A8);
+        assert_eq!(Square::last(bitboard), A8);
     }
 
     #[test]
     fn consume_next_bit_in_a_bitboard() {
-        let mut bitboard = Square::A1.u64() | Square::A8.u64();
+        let mut bitboard = A1.u64() | A8.u64();
 
-        assert_eq!(Square::next(&mut bitboard), Square::A1);
-        assert_eq!(bitboard, Square::A8.u64());
+        assert_eq!(Square::next(&mut bitboard), A1);
+        assert_eq!(bitboard, A8.u64());
 
-        assert_eq!(Square::next(&mut bitboard), Square::A8);
+        assert_eq!(Square::next(&mut bitboard), A8);
         assert_eq!(bitboard, 0);
     }
 
@@ -198,7 +193,7 @@ mod tests {
 
     #[test]
     fn advance_a_square_given_a_colour() {
-        assert_eq!(Square::E5, Square::E4.advance(Colour::White));
-        assert_eq!(Square::E3, Square::E4.advance(Colour::Black));
+        assert_eq!(E5, E4.advance(Colour::White));
+        assert_eq!(E3, E4.advance(Colour::Black));
     }
 }
