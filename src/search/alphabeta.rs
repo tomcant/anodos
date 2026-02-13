@@ -61,6 +61,12 @@ pub fn search(
         tt_move = entry.mv;
     }
 
+    // Internal iterative reduction: reduce depth when no TT move is available
+    // since it's less likely that there's anything interesting here.
+    if tt_move.is_none() && depth >= 6 {
+        depth -= 1;
+    }
+
     ss.report.nodes += 1;
 
     let colour_to_move = pos.colour_to_move;
