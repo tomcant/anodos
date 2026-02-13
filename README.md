@@ -31,7 +31,7 @@ Anodos is a UCI-compatible chess engine written in Rust. Built from scratch with
   - Transposition table with Zobrist keys
   - Move ordering
     - TT move
-    - MVV/LVA
+    - SEE + MVV/LVA
     - Killer moves
     - History heuristic
 - Handcrafted evaluation
@@ -49,7 +49,6 @@ Anodos is a UCI-compatible chess engine written in Rust. Built from scratch with
 ## Roadmap
 
 - Search
-  - Static exchange evaluation
   - Delta pruning in quiescence
   - Internal iterative reduction
   - Counter-move heuristic

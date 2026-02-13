@@ -83,7 +83,7 @@ impl MovePicker {
                         if see::see_ge(&pos.board, &mv) {
                             SCORE_GOOD_CAPTURE + mvv_lva(victim, mv.piece)
                         } else {
-                            SCORE_BAD_CAPTURE + mvv_lva(victim, mv.piece)
+                            continue; // Skip bad captures in quiescence search
                         }
                     } else {
                         SCORE_PROMOTION
@@ -197,17 +197,18 @@ mod tests {
     }
 
     #[test]
-    fn non_quiet_order_moves_by_mvv_lva() {
+    fn non_quiet_order_moves_by_good_captures_mvv_lva() {
         let pawn_x_pawn = make_move(Piece::WP, Square::C4, Square::B5, Some(Piece::BP));
         let pawn_x_queen = make_move(Piece::WP, Square::C4, Square::D5, Some(Piece::BQ));
         let knight_x_bishop = make_move(Piece::WN, Square::F4, Square::D3, Some(Piece::BB));
         let knight_x_queen = make_move(Piece::WN, Square::F4, Square::D5, Some(Piece::BQ));
         let knight_x_rook = make_move(Piece::WN, Square::F4, Square::G6, Some(Piece::BR));
         let knight_x_knight = make_move(Piece::WN, Square::F4, Square::H3, Some(Piece::BN));
+        let knight_x_pawn = make_move(Piece::WN, Square::F4, Square::E6, Some(Piece::BP)); // Bad capture
         let promotion = make_promotion_move(Colour::White, Square::A7, Square::A8, Piece::WQ);
 
         let mut picker = MovePicker::new(
-            &parse_fen("7k/P7/6r1/1p1q4/2P2N2/3b3n/8/4K3 w - - 0 1"),
+            &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/8/4K3 w - - 0 1"),
             MovePickerMode::NonQuiets,
         );
 
@@ -229,5 +230,8 @@ mod tests {
         assert!(index_knight_x_bishop < index_knight_x_knight);
         assert!(index_knight_x_knight < index_pawn_x_pawn);
         assert!(index_pawn_x_pawn < index_promotion);
+
+        // Bad captures are pruned for quiescence search.
+        assert!(!picked.contains(&knight_x_pawn));
     }
 }
