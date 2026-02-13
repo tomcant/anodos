@@ -3,6 +3,9 @@ use super::{
     *,
 };
 use crate::attacks::is_in_check;
+use crate::eval::terms::PIECE_WEIGHTS;
+
+const DELTA_MARGIN: i32 = 200;
 
 pub fn search(pos: &mut Position, mut alpha: i32, beta: i32, report: &mut Report) -> i32 {
     report.nodes += 1;
@@ -21,6 +24,18 @@ pub fn search(pos: &mut Position, mut alpha: i32, beta: i32, report: &mut Report
     let mut move_picker = MovePicker::new(pos, MovePickerMode::NonQuiets);
 
     while let Some(mv) = move_picker.pick() {
+        // Delta pruning: if the static eval plus the captured piece value is
+        // still less than alpha then prune this move because it is hopeless.
+        let mut delta = mv.captured_piece.map_or(0, |piece| PIECE_WEIGHTS[piece]);
+
+        if let Some(promo) = mv.promotion_piece {
+            delta += PIECE_WEIGHTS[promo] - PIECE_WEIGHTS[mv.piece];
+        }
+
+        if eval + delta + DELTA_MARGIN < alpha {
+            continue;
+        }
+
         pos.do_move(&mv);
 
         if is_in_check(colour_to_move, &pos.board) {
