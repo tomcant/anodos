@@ -1,8 +1,8 @@
 use crate::attacks::en_passant_attacks;
 use crate::colour::Colour;
 use crate::movegen::Move;
-use crate::piece::Piece;
-use crate::square::Square;
+use crate::piece::Piece::{self, *};
+use crate::square::{LIGHT_SQUARES, Square};
 use smallvec::SmallVec;
 
 mod board;
@@ -251,6 +251,10 @@ impl Position {
         debug_assert_eq!(self.key, self.compute_key());
     }
 
+    pub fn is_fifty_move_draw(&self) -> bool {
+        self.half_move_clock >= 100
+    }
+
     pub fn is_repetition_draw(&self, search_ply: u8) -> bool {
         if self.half_move_clock < 8 {
             return false;
@@ -280,8 +284,33 @@ impl Position {
         false
     }
 
-    pub fn is_fifty_move_draw(&self) -> bool {
-        self.half_move_clock >= 100
+    pub fn is_insufficient_material_draw(&self) -> bool {
+        let board = &self.board;
+
+        if board.count_pieces(WP) != 0
+            || board.count_pieces(BP) != 0
+            || board.count_pieces(WR) != 0
+            || board.count_pieces(BR) != 0
+            || board.count_pieces(WQ) != 0
+            || board.count_pieces(BQ) != 0
+        {
+            return false;
+        }
+
+        let white_minors = board.count_pieces(WN) + board.count_pieces(WB);
+        let black_minors = board.count_pieces(BN) + board.count_pieces(BB);
+
+        // KvK, KNvK, KBvK
+        if white_minors + black_minors <= 1 {
+            return true;
+        }
+
+        // KBvKB, same colour bishops
+        if white_minors == 1 && black_minors == 1 && board.count_pieces(WB) == 1 && board.count_pieces(BB) == 1 {
+            return ((board.pieces(WB) | board.pieces(BB)) & LIGHT_SQUARES).count_ones() != 1;
+        }
+
+        false
     }
 
     pub fn opponent_colour(&self) -> Colour {
@@ -846,6 +875,44 @@ mod tests {
                 !pos.is_repetition_draw(0),
                 "Position should not be considered a repetition draw at ply {}",
                 index + 1
+            );
+        }
+    }
+
+    #[test]
+    fn insufficient_material_draw() {
+        let cases = [
+            "4k3/8/8/8/8/8/8/4K3 w - - 0 1",    // KvK
+            "4k3/8/8/8/8/8/8/4K1N1 w - - 0 1",  // KNvK
+            "4k3/8/8/8/8/8/8/2B1K3 w - - 0 1",  // KBvK
+            "4kb2/8/8/8/8/8/8/2B1K3 w - - 0 1", // KBvKB, same colour bishops
+        ];
+        for fen in cases {
+            let pos = parse_fen(fen);
+
+            assert!(
+                pos.is_insufficient_material_draw(),
+                "Position '{fen}' is an insufficient material draw",
+            );
+        }
+    }
+
+    #[test]
+    fn not_insufficient_material_draw() {
+        let cases = [
+            "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",   // KPvK
+            "4k3/8/8/8/8/8/8/1N2K1N1 w - - 0 1", // KNNvK
+            "4k3/8/8/8/8/8/8/2B1KB2 w - - 0 1",  // KBBvK
+            "2b1k3/8/8/8/8/8/8/2B1K3 w - - 0 1", // KBvKB, opposite colour bishops
+            "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",    // KRvK
+            "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",    // KQvK
+        ];
+        for fen in cases {
+            let pos = parse_fen(fen);
+
+            assert!(
+                !pos.is_insufficient_material_draw(),
+                "Position '{fen}' is not an insufficient material draw",
             );
         }
     }
