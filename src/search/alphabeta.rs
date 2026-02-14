@@ -1,6 +1,7 @@
 use super::{
     history::HISTORY_SCORE_MAX,
     movepicker::{MovePicker, MovePickerMode},
+    see::see_ge,
     tt::Bound,
     *,
 };
@@ -210,19 +211,29 @@ pub fn search(
         let mut eval;
 
         if has_searched_one {
-            // Late Move Reductions: for moves that are quiet, non-checking, and
-            // played later in the move order, we search them at reduced depth
-            // because they're less likely to raise alpha.
+            // Late move reductions: search moves that are non-checking and
+            // played later in the move order at reduced depth because they're
+            // less likely to raise alpha. Bad captures (SEE < 0) are reduced
+            // more aggressively.
             let reduction = if !is_pv_node
                 && depth >= 3
                 && move_number >= 4
                 && !in_check
                 && !gives_check
-                && mv.is_quiet()
-                && !ss.killers.is_killer(ply, &mv)
-                && ss.history.probe(mv.piece, mv.to) < LMR_HISTORY_THRESHOLD
             {
-                (log2(depth) * log2(move_number) / 3).min(depth.saturating_sub(2))
+                if (
+                    mv.is_quiet()
+                        && !ss.killers.is_killer(ply, &mv)
+                        && ss.history.probe(mv.piece, mv.to) < LMR_HISTORY_THRESHOLD
+                ) || (
+                    mv.captured_piece.is_some()
+                        && !see_ge(&pos.board, &mv)
+                ) {
+                    let divisor = if mv.is_quiet() { 3 } else { 2 };
+                    (log2(depth) * log2(move_number) / divisor).min(depth.saturating_sub(2))
+                } else {
+                    0
+                }
             } else {
                 0
             };
