@@ -222,7 +222,7 @@ pub fn search(
                 && !ss.killers.is_killer(ply, &mv)
                 && ss.history.probe(mv.piece, mv.to) < LMR_HISTORY_THRESHOLD
             {
-                (log2(depth) * log2(move_number) / 3).min(depth.saturating_sub(2))
+                (log2(depth) * log2(move_number) / 2).min(depth.saturating_sub(2))
             } else {
                 0
             };
