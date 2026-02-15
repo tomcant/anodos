@@ -19,6 +19,8 @@ pub const FILES: [u64; 8] = [
     FILE_A << 7,
 ];
 
+pub const LIGHT_SQUARES: u64 = 0x55AA_55AA_55AA_55AA;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Square(u8);
 
