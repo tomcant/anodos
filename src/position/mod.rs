@@ -85,7 +85,7 @@ impl Position {
 
         if let Some(capture_square) = mv.capture_square() {
             self.half_move_clock = 0;
-            self.board.remove_piece(capture_square);
+            self.board.remove_piece(capture_square, mv.captured_piece.unwrap());
             self.key ^= ZOBRIST.piece_square[mv.captured_piece.unwrap()][capture_square];
         }
 
@@ -114,7 +114,7 @@ impl Position {
                         let rook_from = Square::from_file_and_rank(0, mv.to.rank());
 
                         self.board.put_piece(rook, rook_to);
-                        self.board.remove_piece(rook_from);
+                        self.board.remove_piece(rook_from, rook);
 
                         self.key ^= ZOBRIST.piece_square[rook][rook_to];
                         self.key ^= ZOBRIST.piece_square[rook][rook_from];
@@ -124,7 +124,7 @@ impl Position {
                         let rook_from = Square::from_file_and_rank(7, mv.to.rank());
 
                         self.board.put_piece(rook, rook_to);
-                        self.board.remove_piece(rook_from);
+                        self.board.remove_piece(rook_from, rook);
 
                         self.key ^= ZOBRIST.piece_square[rook][rook_to];
                         self.key ^= ZOBRIST.piece_square[rook][rook_from];
@@ -147,7 +147,7 @@ impl Position {
 
         let to_piece = mv.promotion_piece.unwrap_or(mv.piece);
         self.board.put_piece(to_piece, mv.to);
-        self.board.remove_piece(mv.from);
+        self.board.remove_piece(mv.from, mv.piece);
 
         self.key ^= ZOBRIST.piece_square[to_piece][mv.to];
         self.key ^= ZOBRIST.piece_square[mv.piece][mv.from];
@@ -178,20 +178,20 @@ impl Position {
                     let rook_from = Square::from_file_and_rank(3, mv.to.rank());
 
                     self.board.put_piece(rook, rook_to);
-                    self.board.remove_piece(rook_from);
+                    self.board.remove_piece(rook_from, rook);
                 }
                 Square::G1 | Square::G8 => {
                     let rook_to = Square::from_file_and_rank(7, mv.to.rank());
                     let rook_from = Square::from_file_and_rank(5, mv.to.rank());
 
                     self.board.put_piece(rook, rook_to);
-                    self.board.remove_piece(rook_from);
+                    self.board.remove_piece(rook_from, rook);
                 }
                 _ => unreachable!(),
             };
         }
 
-        self.board.remove_piece(mv.to);
+        self.board.remove_piece(mv.to, mv.promotion_piece.unwrap_or(mv.piece));
         self.board.put_piece(mv.piece, mv.from);
 
         if let Some(capture_square) = mv.capture_square() {

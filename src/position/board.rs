@@ -44,10 +44,7 @@ impl Board {
         self.piece_at(square).is_some()
     }
 
-    pub fn remove_piece(&mut self, square: Square) {
-        let Some(piece) = self.piece_at(square) else {
-            return;
-        };
+    pub fn remove_piece(&mut self, square: Square, piece: Piece) {
         self.squares[square] = None;
         self.pieces[piece] &= !square.u64();
         self.colours[piece.colour()] &= !square.u64();
@@ -88,7 +85,7 @@ mod tests {
 
         assert!(board.has_piece_at(square));
 
-        board.remove_piece(square);
+        board.remove_piece(square, Piece::WK);
 
         assert!(!board.has_piece_at(square));
     }
