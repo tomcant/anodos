@@ -6,6 +6,8 @@ const RANK_1: u64 = 0x0000_0000_0000_00FF;
 
 const CORNERS: u64 = 0x8100_0000_0000_0081;
 
+pub const LIGHT_SQUARES: u64 = 0x55AA_55AA_55AA_55AA;
+
 pub const BACK_RANKS: u64 = RANK_1 | (RANK_1 << 56);
 
 pub const FILES: [u64; 8] = [

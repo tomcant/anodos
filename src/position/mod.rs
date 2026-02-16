@@ -1,8 +1,8 @@
 use crate::attacks::en_passant_attacks;
 use crate::colour::Colour;
 use crate::movegen::Move;
-use crate::piece::Piece;
-use crate::square::Square;
+use crate::piece::Piece::{self, *};
+use crate::square::{LIGHT_SQUARES, Square};
 use smallvec::SmallVec;
 
 mod board;
@@ -251,6 +251,10 @@ impl Position {
         debug_assert_eq!(self.key, self.compute_key());
     }
 
+    pub fn is_fifty_move_draw(&self) -> bool {
+        self.half_move_clock >= 100
+    }
+
     pub fn is_repetition_draw(&self, search_ply: u8) -> bool {
         if self.half_move_clock < 8 {
             return false;
@@ -280,8 +284,32 @@ impl Position {
         false
     }
 
-    pub fn is_fifty_move_draw(&self) -> bool {
-        self.half_move_clock >= 100
+    pub fn has_checkmate_material(&self) -> bool {
+        let board = &self.board;
+
+        if board.count_pieces(WP) != 0
+            || board.count_pieces(BP) != 0
+            || board.count_pieces(WR) != 0
+            || board.count_pieces(BR) != 0
+            || board.count_pieces(WQ) != 0
+            || board.count_pieces(BQ) != 0
+        {
+            return true;
+        }
+
+        let wb = board.count_pieces(WB);
+        let bb = board.count_pieces(BB);
+        let wn = board.count_pieces(WN);
+        let bn = board.count_pieces(BN);
+
+        // KNB, KNNN
+        if (wb != 0 && wn != 0) || (bb != 0 && bn != 0) || wn >= 3 || bn >= 3 {
+            return true;
+        }
+
+        // KBB, bishop pair
+        (wb == 2 && (board.pieces(WB) & LIGHT_SQUARES).count_ones() == 1)
+            || (bb == 2 && (board.pieces(BB) & LIGHT_SQUARES).count_ones() == 1)
     }
 
     pub fn opponent_colour(&self) -> Colour {
@@ -846,6 +874,54 @@ mod tests {
                 !pos.is_repetition_draw(0),
                 "Position should not be considered a repetition draw at ply {}",
                 index + 1
+            );
+        }
+    }
+
+    #[test]
+    fn has_checkmate_material() {
+        let cases = [
+            "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",    // KPvK, white
+            "4k3/4p3/8/8/8/8/8/4K3 w - - 0 1",    // KPvK, black
+            "4k3/8/8/8/8/8/8/1NB1K3 w - - 0 1",   // KNBvK, white
+            "1nb1k3/8/8/8/8/8/8/4K3 w - - 0 1",   // KNBvK, black
+            "4k3/8/8/8/8/8/8/2B1KB2 w - - 0 1",   // KBBvK, white, bishop pair
+            "2b1kb2/8/8/8/8/8/8/4K3 w - - 0 1",   // KBBvK, black, bishop pair
+            "4k3/8/8/8/8/8/8/1NN1K1N1 w - - 0 1", // KNNNvK, white
+            "1nn1k1n1/8/8/8/8/8/8/4K3 w - - 0 1", // KNNNvK, black
+            "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",     // KRvK, white
+            "r3k3/8/8/8/8/8/8/4K3 w - - 0 1",     // KRvK, black
+            "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",     // KQvK, white
+            "3qk3/8/8/8/8/8/8/4K3 w - - 0 1",     // KQvK, black
+        ];
+        for fen in cases {
+            let pos = parse_fen(fen);
+
+            assert!(
+                pos.has_checkmate_material(),
+                "Position '{fen}' does have checkmate material"
+            );
+        }
+    }
+
+    #[test]
+    fn not_has_checkmate_material() {
+        let cases = [
+            "4k3/8/8/8/8/8/8/4K3 w - - 0 1",      // KvK
+            "4k3/8/8/8/8/8/8/4K1N1 w - - 0 1",    // KNvK
+            "4k3/8/8/8/8/8/8/2B1K3 w - - 0 1",    // KBvK
+            "4k3/8/8/8/8/8/8/1N2K1N1 w - - 0 1",  // KNNvK
+            "4k1n1/8/8/8/8/8/8/4K1N1 w - - 0 1",  // KNvKN
+            "4k1b1/8/8/8/8/8/8/4K1N1 w - - 0 1",  // KNvKB
+            "4kb2/8/8/8/8/8/8/2B1K3 w - - 0 1",   // KBvKB, same colour bishops
+            "4k3/8/8/8/8/8/8/B1B1K1B1 w - - 0 1", // KBBBvK
+        ];
+        for fen in cases {
+            let pos = parse_fen(fen);
+
+            assert!(
+                !pos.has_checkmate_material(),
+                "Position '{fen}' does not have checkmate material",
             );
         }
     }

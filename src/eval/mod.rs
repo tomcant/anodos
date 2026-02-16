@@ -16,6 +16,10 @@ pub const EVAL_MATE: i32 = EVAL_MAX;
 pub const EVAL_MATE_THRESHOLD: i32 = EVAL_MATE - MAX_DEPTH as i32;
 
 pub fn eval(pos: &Position) -> i32 {
+    if !pos.has_checkmate_material() {
+        return EVAL_DRAW;
+    }
+
     let eval = TERMS.iter().fold(EvalTerm::zero(), |acc, term| {
         acc + term(Colour::White, &pos.board) - term(Colour::Black, &pos.board)
     });
