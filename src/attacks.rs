@@ -149,13 +149,14 @@ lazy_static! {
 mod tests {
     use super::*;
     use crate::position::Position;
+    use crate::square::Square::*;
     use crate::testing::*;
 
     #[test]
     fn detect_check() {
         let mut board = Board::empty();
-        board.put_piece(BK, Square::E8);
-        board.put_piece(WN, Square::D6);
+        board.put_piece(BK, E8);
+        board.put_piece(WN, D6);
 
         assert!(is_in_check(Colour::Black, &board));
     }
@@ -164,206 +165,165 @@ mod tests {
     fn attack_by_queen_horizontal() {
         let pos = parse_fen("Q3k3/8/8/8/8/8/8/8 w - - 0 1");
 
-        assert!(is_attacked(Square::E8, Colour::White, &pos.board));
+        assert!(is_attacked(E8, Colour::White, &pos.board));
     }
 
     #[test]
     fn attack_by_queen_vertical() {
         let pos = parse_fen("4k3/8/8/8/4Q3/8/8/8 w - - 0 1");
 
-        assert!(is_attacked(Square::E8, Colour::White, &pos.board));
+        assert!(is_attacked(E8, Colour::White, &pos.board));
     }
 
     #[test]
     fn attack_by_queen_diagonal() {
         let pos = parse_fen("4k3/8/8/8/Q7/8/8/8 w - - 0 1");
 
-        assert!(is_attacked(Square::E8, Colour::White, &pos.board));
+        assert!(is_attacked(E8, Colour::White, &pos.board));
     }
 
     #[test]
     fn white_pawn_attacks_none() {
         let pos = parse_fen("8/8/8/8/8/8/4P3/8 w - - 0 1");
 
-        assert_attacks_eq(&pos, "e2", &[]);
+        assert_attacks_eq(&pos, E2, &[]);
     }
 
     #[test]
     fn white_pawn_attacks_left() {
         let pos = parse_fen("8/8/8/8/8/3p4/4P3/8 w - - 0 1");
 
-        assert_attacks_eq(&pos, "e2", &["d3"]);
+        assert_attacks_eq(&pos, E2, &[D3]);
     }
 
     #[test]
     fn white_pawn_attacks_right() {
         let pos = parse_fen("8/8/8/8/8/5p2/4P3/8 w - - 0 1");
 
-        assert_attacks_eq(&pos, "e2", &["f3"]);
+        assert_attacks_eq(&pos, E2, &[F3]);
     }
 
     #[test]
     fn white_pawn_attacks_left_and_right() {
         let pos = parse_fen("8/8/8/8/8/3p1p2/4P3/8 w - - 0 1");
 
-        assert_attacks_eq(&pos, "e2", &["d3", "f3"]);
+        assert_attacks_eq(&pos, E2, &[D3, F3]);
     }
 
     #[test]
     fn black_pawn_attacks_none() {
         let pos = parse_fen("8/4p3/8/8/8/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(&pos, "e7", &[]);
+        assert_attacks_eq(&pos, E7, &[]);
     }
 
     #[test]
     fn black_pawn_attacks_left() {
         let pos = parse_fen("8/4p3/3P4/8/8/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(&pos, "e7", &["d6"]);
+        assert_attacks_eq(&pos, E7, &[D6]);
     }
 
     #[test]
     fn black_pawn_attacks_right() {
         let pos = parse_fen("8/4p3/5P2/8/8/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(&pos, "e7", &["f6"]);
+        assert_attacks_eq(&pos, E7, &[F6]);
     }
 
     #[test]
     fn black_pawn_attacks_left_and_right() {
         let pos = parse_fen("8/4p3/3P1P2/8/8/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(&pos, "e7", &["d6", "f6"]);
+        assert_attacks_eq(&pos, E7, &[D6, F6]);
     }
 
     #[test]
     fn knight_attacks() {
         let pos = parse_fen("8/8/8/8/3N4/8/8/8 w - - 0 1");
 
-        assert_attacks_eq(&pos, "d4", &["c2", "e2", "b3", "f3", "b5", "f5", "c6", "e6"]);
+        assert_attacks_eq(&pos, D4, &[C2, E2, B3, F3, B5, F5, C6, E6]);
     }
 
     #[test]
     fn bishop_attacks_on_empty_board() {
         let pos = parse_fen("8/8/8/8/3b4/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "d4",
-            &[
-                "a1", "g1", "b2", "f2", "c3", "e3", "c5", "e5", "b6", "f6", "a7", "g7", "h8",
-            ],
-        );
+        assert_attacks_eq(&pos, D4, &[A1, G1, B2, F2, C3, E3, C5, E5, B6, F6, A7, G7, H8]);
     }
 
     #[test]
     fn bishop_attacks_with_up_left_blocker() {
         let pos = parse_fen("8/8/2n5/8/8/8/6B1/8 w - - 0 1");
 
-        assert_attacks_eq(&pos, "g2", &["h1", "h3", "f1", "f3", "e4", "d5", "c6"]);
+        assert_attacks_eq(&pos, G2, &[H1, H3, F1, F3, E4, D5, C6]);
     }
 
     #[test]
     fn bishop_attacks_with_up_right_blocker() {
         let pos = parse_fen("8/8/5n2/8/8/8/1B6/8 w - - 0 1");
 
-        assert_attacks_eq(&pos, "b2", &["a1", "a3", "c1", "c3", "d4", "e5", "f6"]);
+        assert_attacks_eq(&pos, B2, &[A1, A3, C1, C3, D4, E5, F6]);
     }
 
     #[test]
     fn bishop_attacks_with_down_left_blocker() {
         let pos = parse_fen("8/8/8/4B3/3n4/8/8/8 w - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "e5",
-            &["h8", "g7", "f6", "d4", "f4", "g3", "h2", "d6", "c7", "b8"],
-        );
+        assert_attacks_eq(&pos, E5, &[H8, G7, F6, D4, F4, G3, H2, D6, C7, B8]);
     }
 
     #[test]
     fn bishop_attacks_with_down_right_blocker() {
         let pos = parse_fen("8/8/8/3b4/8/5N2/8/8 w - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "d5",
-            &["a8", "b7", "c6", "e6", "f7", "g8", "c4", "b3", "a2", "e4", "f3"],
-        );
+        assert_attacks_eq(&pos, D5, &[A8, B7, C6, E6, F7, G8, C4, B3, A2, E4, F3]);
     }
 
     #[test]
     fn rook_attacks_on_empty_board() {
         let pos = parse_fen("8/8/8/8/3r4/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "d4",
-            &[
-                "d1", "d2", "d3", "d5", "d6", "d7", "d8", "a4", "b4", "c4", "e4", "f4", "g4", "h4",
-            ],
-        );
+        assert_attacks_eq(&pos, D4, &[D1, D2, D3, D5, D6, D7, D8, A4, B4, C4, E4, F4, G4, H4]);
     }
 
     #[test]
     fn rook_attacks_with_up_blocker() {
         let pos = parse_fen("8/8/8/3N4/8/8/8/3r4 b - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "d1",
-            &["d2", "d3", "d4", "d5", "a1", "b1", "c1", "e1", "f1", "g1", "h1"],
-        );
+        assert_attacks_eq(&pos, D1, &[D2, D3, D4, D5, A1, B1, C1, E1, F1, G1, H1]);
     }
 
     #[test]
     fn rook_attacks_with_right_blocker() {
         let pos = parse_fen("8/8/8/r2N4/8/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "a5",
-            &["b5", "c5", "d5", "a6", "a7", "a8", "a4", "a3", "a2", "a1"],
-        );
+        assert_attacks_eq(&pos, A5, &[B5, C5, D5, A6, A7, A8, A4, A3, A2, A1]);
     }
 
     #[test]
     fn rook_attacks_with_left_blocker() {
         let pos = parse_fen("8/8/8/3N3r/8/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "h5",
-            &["g5", "f5", "e5", "d5", "h6", "h7", "h8", "h4", "h3", "h2", "h1"],
-        );
+        assert_attacks_eq(&pos, H5, &[G5, F5, E5, D5, H6, H7, H8, H4, H3, H2, H1]);
     }
 
     #[test]
     fn rook_attacks_with_down_blocker() {
         let pos = parse_fen("3r4/8/8/3N4/8/8/8/8 b - - 0 1");
 
-        assert_attacks_eq(
-            &pos,
-            "d8",
-            &["d7", "d6", "d5", "a8", "b8", "c8", "e8", "f8", "g8", "h8"],
-        );
+        assert_attacks_eq(&pos, D8, &[D7, D6, D5, A8, B8, C8, E8, F8, G8, H8]);
     }
 
     #[test]
     fn king_attacks() {
         let pos = parse_fen("8/8/8/8/8/8/8/4K3 w - - 0 1");
 
-        assert_attacks_eq(&pos, "e1", &["d1", "f1", "d2", "e2", "f2"]);
+        assert_attacks_eq(&pos, E1, &[D1, F1, D2, E2, F2]);
     }
 
-    fn assert_attacks_eq(pos: &Position, attacker: &str, squares: &[&str]) {
-        let expected_attacks: u64 = squares
-            .iter()
-            .map(|square| square.parse::<Square>().unwrap().u64())
-            .sum();
-
-        let attacker = attacker.parse().unwrap();
+    fn assert_attacks_eq(pos: &Position, attacker: Square, squares: &[Square]) {
+        let expected_attacks: u64 = squares.iter().map(|square| square.u64()).sum();
         let actual_attacks = attacks(pos.board.piece_at(attacker).unwrap(), attacker, &pos.board);
 
         assert_eq!(expected_attacks, actual_attacks);

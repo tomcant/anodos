@@ -1,7 +1,7 @@
 use super::report::Report;
 use super::time::TimeLimit;
 use crate::eval::EVAL_MIN;
-use crate::movegen::Move;
+use crate::r#move::Move;
 use std::cell::Cell;
 use std::sync::atomic::{AtomicBool, Ordering};
 

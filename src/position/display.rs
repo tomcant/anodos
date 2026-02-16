@@ -30,19 +30,10 @@ impl Display for Board {
 
                 match self.piece_at(square) {
                     Some(piece) => {
+                        #[rustfmt::skip]
                         let symbol = match piece {
-                            Piece::WP => 'P',
-                            Piece::WN => 'N',
-                            Piece::WB => 'B',
-                            Piece::WR => 'R',
-                            Piece::WQ => 'Q',
-                            Piece::WK => 'K',
-                            Piece::BP => 'p',
-                            Piece::BN => 'n',
-                            Piece::BB => 'b',
-                            Piece::BR => 'r',
-                            Piece::BQ => 'q',
-                            Piece::BK => 'k',
+                            WP => 'P', WN => 'N', WB => 'B', WR => 'R', WQ => 'Q', WK => 'K',
+                            BP => 'p', BN => 'n', BB => 'b', BR => 'r', BQ => 'q', BK => 'k',
                         };
                         line.push_str(&format!("{symbol} "));
                     }

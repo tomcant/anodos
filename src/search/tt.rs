@@ -1,5 +1,5 @@
 use crate::eval::EVAL_MATE_THRESHOLD;
-use crate::movegen::Move;
+use crate::r#move::Move;
 
 pub const MIN_SIZE_MB: usize = 1;
 pub const MAX_SIZE_MB: usize = 4096;

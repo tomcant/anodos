@@ -1,5 +1,5 @@
 use crate::colour::Colour;
-use crate::square::Square;
+use crate::square::Square::{self, *};
 
 #[derive(Debug, Clone, Copy)]
 pub enum CastlingRight {
@@ -44,10 +44,10 @@ impl CastlingRights {
 
     pub fn remove_for_square(&mut self, square: Square) {
         self.remove(match square {
-            Square::A1 => CastlingRight::WhiteQueen,
-            Square::H1 => CastlingRight::WhiteKing,
-            Square::A8 => CastlingRight::BlackQueen,
-            Square::H8 => CastlingRight::BlackKing,
+            A1 => CastlingRight::WhiteQueen,
+            H1 => CastlingRight::WhiteKing,
+            A8 => CastlingRight::BlackQueen,
+            H8 => CastlingRight::BlackKing,
             _ => panic!("cannot remove castling rights for square"),
         });
     }
@@ -106,7 +106,7 @@ mod tests {
     fn remove_castling_rights_for_a_corner_square() {
         let mut rights = CastlingRights::all();
 
-        rights.remove_for_square(Square::H1);
+        rights.remove_for_square(H1);
 
         assert_eq!(
             rights,

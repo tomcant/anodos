@@ -1,5 +1,6 @@
 use crate::info;
-use crate::movegen::{Move, perft};
+use crate::r#move::Move;
+use crate::perft;
 use crate::piece::Piece;
 use crate::position::Position;
 use crate::search::{
@@ -102,8 +103,8 @@ pub fn set_option(name: String, value: Option<String>, tt: &mut TranspositionTab
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::piece::Piece;
-    use crate::square::Square;
+    use crate::piece::Piece::*;
+    use crate::square::Square::*;
     use crate::uci::command::UciCommand::{self, *};
 
     #[test]
@@ -116,8 +117,8 @@ mod tests {
 
         position(fen, moves, &mut pos);
 
-        assert_eq!(pos.board.piece_at(Square::E4), Some(Piece::WP));
-        assert_eq!(pos.board.piece_at(Square::E5), Some(Piece::BP));
+        assert_eq!(pos.board.piece_at(E4), Some(WP));
+        assert_eq!(pos.board.piece_at(E5), Some(BP));
     }
 
     #[test]
@@ -130,8 +131,8 @@ mod tests {
 
         position(fen, moves, &mut pos);
 
-        assert_eq!(pos.board.piece_at(Square::B8), Some(Piece::WQ));
-        assert_eq!(pos.board.piece_at(Square::G1), Some(Piece::BR));
+        assert_eq!(pos.board.piece_at(B8), Some(WQ));
+        assert_eq!(pos.board.piece_at(G1), Some(BR));
     }
 
     #[test]
@@ -144,9 +145,9 @@ mod tests {
 
         position(fen, moves, &mut pos);
 
-        assert_eq!(pos.board.piece_at(Square::D6), Some(Piece::WP));
-        assert!(!pos.board.has_piece_at(Square::E5));
-        assert!(!pos.board.has_piece_at(Square::D5));
+        assert_eq!(pos.board.piece_at(D6), Some(WP));
+        assert!(!pos.board.has_piece_at(E5));
+        assert!(!pos.board.has_piece_at(D5));
     }
 
     #[test]
@@ -159,9 +160,9 @@ mod tests {
 
         position(fen, moves, &mut pos);
 
-        assert_eq!(pos.board.piece_at(Square::E3), Some(Piece::BP));
-        assert!(!pos.board.has_piece_at(Square::D4));
-        assert!(!pos.board.has_piece_at(Square::E4));
+        assert_eq!(pos.board.piece_at(E3), Some(BP));
+        assert!(!pos.board.has_piece_at(D4));
+        assert!(!pos.board.has_piece_at(E4));
     }
 
     fn parse_command(str: &str) -> UciCommand {

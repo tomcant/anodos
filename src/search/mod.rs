@@ -8,7 +8,8 @@ use self::{
 };
 use crate::attacks::is_in_check;
 use crate::eval::*;
-use crate::movegen::{Move, MoveList, generate_all_moves};
+use crate::r#move::Move;
+use crate::movegen::{MoveList, generate_all_moves};
 use crate::position::Position;
 
 pub mod report;
@@ -164,8 +165,8 @@ fn sanitise_pv(mut pos: Position, (moves, eval): (MoveList, i32)) -> (MoveList, 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::piece::Piece;
-    use crate::square::Square;
+    use crate::piece::Piece::*;
+    use crate::square::Square::*;
     use crate::testing::*;
     use std::cell::Cell;
 
@@ -180,10 +181,7 @@ mod tests {
         search(&mut pos, &mut tt, &reporter, &stopper);
 
         assert_eq!(reporter.nodes(), 0);
-        assert_eq!(
-            reporter.best_move(),
-            Some(make_move(Piece::BK, Square::G8, Square::G7, None))
-        );
+        assert_eq!(reporter.best_move(), Some(make_move(BK, G8, G7, None)));
     }
 
     struct TestReporter {

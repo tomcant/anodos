@@ -1,7 +1,4 @@
 use super::*;
-use crate::colour::Colour;
-use crate::piece::Piece;
-use crate::square::Square;
 
 pub const START_POS_FEN: &str = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
@@ -116,7 +113,7 @@ fn parse_board(str: &str) -> Result<Board, String> {
     }
 
     let mut board = Board::empty();
-    let mut square_index = Square::A8.index();
+    let mut square_index = A8.index();
 
     for char in str.chars() {
         if char == '/' {
@@ -129,19 +126,10 @@ fn parse_board(str: &str) -> Result<Board, String> {
             continue;
         }
 
+        #[rustfmt::skip]
         let piece = match char {
-            'P' => Piece::WP,
-            'N' => Piece::WN,
-            'B' => Piece::WB,
-            'R' => Piece::WR,
-            'Q' => Piece::WQ,
-            'K' => Piece::WK,
-            'p' => Piece::BP,
-            'n' => Piece::BN,
-            'b' => Piece::BB,
-            'r' => Piece::BR,
-            'q' => Piece::BQ,
-            'k' => Piece::BK,
+            'P' => WP, 'N' => WN, 'B' => WB, 'R' => WR, 'Q' => WQ, 'K' => WK,
+            'p' => BP, 'n' => BN, 'b' => BB, 'r' => BR, 'q' => BQ, 'k' => BK,
             _ => return Err(format!("invalid piece '{char}'")),
         };
 
@@ -213,7 +201,7 @@ mod tests {
         let parse = START_POS_FEN.parse::<Position>();
 
         assert!(parse.is_ok());
-        assert_eq!(parse.unwrap().board.piece_at(Square::E2), Some(Piece::WP));
+        assert_eq!(parse.unwrap().board.piece_at(E2), Some(WP));
     }
 
     #[test]
@@ -306,7 +294,7 @@ mod tests {
         let parse = "8/8/8/8/8/8/8/8 w - f3 0 1".parse::<Position>();
 
         assert!(parse.is_ok());
-        assert_eq!(parse.unwrap().en_passant_square, Some(Square::F3));
+        assert_eq!(parse.unwrap().en_passant_square, Some(F3));
     }
 
     #[test]
@@ -314,7 +302,7 @@ mod tests {
         let parse = "8/8/8/8/8/8/8/8 w - f6 0 1".parse::<Position>();
 
         assert!(parse.is_ok());
-        assert_eq!(parse.unwrap().en_passant_square, Some(Square::F6));
+        assert_eq!(parse.unwrap().en_passant_square, Some(F6));
     }
 
     #[test]

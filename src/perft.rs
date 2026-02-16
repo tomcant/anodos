@@ -1,4 +1,5 @@
-use super::{generate_all_moves, is_in_check};
+use crate::attacks::is_in_check;
+use crate::movegen::generate_all_moves;
 use crate::position::Position;
 use crate::uci::r#move::UciMove;
 

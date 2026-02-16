@@ -1,5 +1,5 @@
 use super::MAX_DEPTH;
-use crate::movegen::Move;
+use crate::r#move::Move;
 
 pub struct KillerMoves {
     moves: [[Option<Move>; 2]; MAX_DEPTH as usize],

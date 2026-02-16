@@ -1,5 +1,6 @@
 use super::MAX_DEPTH;
-use crate::movegen::{Move, MoveList};
+use crate::r#move::Move;
+use crate::movegen::MoveList;
 
 pub struct PvTable {
     table: [MoveList; MAX_DEPTH as usize + 1],
