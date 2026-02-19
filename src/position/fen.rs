@@ -87,7 +87,7 @@ impl std::str::FromStr for Position {
         let parts: Vec<_> = fen.split_whitespace().collect();
         const NUM_PARTS: usize = 6;
 
-        if parts.len() != NUM_PARTS {
+        if parts.len() < NUM_PARTS {
             return Err(format!("FEN must contain {NUM_PARTS} parts, got {}", parts.len()));
         }
 
@@ -205,9 +205,8 @@ mod tests {
     }
 
     #[test]
-    fn parse_error_with_wrong_number_of_parts() {
+    fn parse_error_with_too_few_parts() {
         assert_parse_error("w - - 0 1", "FEN must contain 6 parts, got 5");
-        assert_parse_error("8/8/8/8/8/8/8/8 w - - 0 1 extra", "FEN must contain 6 parts, got 7");
     }
 
     #[test]
