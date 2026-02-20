@@ -14,6 +14,7 @@ const BEST_MOVE_MULTIPLIERS: [f32; 5] = [2.0, 1.2, 0.9, 0.8, 0.75];
 
 pub struct Stopper<'a> {
     pub depth: Option<u8>,
+    mate: Option<u8>,
     time: Option<TimeLimit>,
     eval: Option<i32>,
     nodes: Option<u128>,
@@ -25,6 +26,7 @@ impl<'a> Stopper<'a> {
     pub fn new() -> Self {
         Self {
             depth: None,
+            mate: None,
             time: None,
             eval: None,
             nodes: None,
@@ -35,6 +37,10 @@ impl<'a> Stopper<'a> {
 
     pub fn at_depth(&mut self, depth: Option<u8>) {
         self.depth = depth;
+    }
+
+    pub fn at_mate(&mut self, mate: Option<u8>) {
+        self.mate = mate;
     }
 
     pub fn at_time(&mut self, time: Option<TimeLimit>) {
@@ -72,6 +78,12 @@ impl<'a> Stopper<'a> {
 
         if let Some(eval) = self.eval
             && report.eval().unwrap_or(0).abs() >= eval
+        {
+            return true;
+        }
+
+        if let Some(mate) = self.mate
+            && report.moves_until_mate().is_some_and(|m| m == mate)
         {
             return true;
         }

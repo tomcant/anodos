@@ -96,6 +96,7 @@ fn parse_go(args: &[&str]) -> Result<UciCommand, String> {
 
         match *attr {
             "depth" => params.depth = Some(parse_u8_attr("depth", value)?),
+            "mate" => params.mate = Some(parse_u8_attr("mate", value)?),
             "movetime" => params.movetime = Some(parse_duration_attr("movetime", value)?),
             "wtime" => params.wtime = Some(parse_duration_attr("wtime", value)?),
             "btime" => params.btime = Some(parse_duration_attr("btime", value)?),
@@ -289,15 +290,16 @@ mod tests {
     #[test]
     fn parse_go_command() {
         assert_eq!(
-            "go depth 1 movetime 2 wtime 3 btime 4 winc 5 binc 6 nodes 7".parse(),
+            "go depth 1 mate 2 movetime 3 wtime 4 btime 5 winc 6 binc 7 nodes 8".parse(),
             Ok(Go(GoParams {
                 depth: Some(1),
-                movetime: Some(Duration::from_millis(2)),
-                wtime: Some(Duration::from_millis(3)),
-                btime: Some(Duration::from_millis(4)),
-                winc: Some(Duration::from_millis(5)),
-                binc: Some(Duration::from_millis(6)),
-                nodes: Some(7),
+                mate: Some(2),
+                movetime: Some(Duration::from_millis(3)),
+                wtime: Some(Duration::from_millis(4)),
+                btime: Some(Duration::from_millis(5)),
+                winc: Some(Duration::from_millis(6)),
+                binc: Some(Duration::from_millis(7)),
+                nodes: Some(8),
             }))
         );
     }
@@ -308,6 +310,7 @@ mod tests {
             "go infinite".parse(),
             Ok(Go(GoParams {
                 depth: None,
+                mate: None,
                 movetime: None,
                 wtime: None,
                 btime: None,
