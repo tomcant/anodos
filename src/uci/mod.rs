@@ -66,6 +66,7 @@ pub fn main() {
                     let mut stopper = Stopper::new();
                     stopper.at_signal(&stop_signal);
                     stopper.at_depth(params.depth);
+                    stopper.at_mate(params.mate);
                     stopper.at_nodes(params.nodes);
 
                     let time = params.movetime.map(TimeLimit::fixed).or_else(|| {

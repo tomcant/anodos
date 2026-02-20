@@ -40,7 +40,7 @@ impl Report {
             return None;
         }
 
-        Some((EVAL_MATE - eval.abs()) as u8)
+        Some(((EVAL_MATE - eval.abs()) as u8).div_ceil(2))
     }
 }
 

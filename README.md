@@ -80,6 +80,7 @@ position startpos [moves ...]
 position fen <fen> [moves ...]
 go [infinite]
 go depth <n>
+go mate <n>
 go nodes <n>
 go movetime <ms>
 go wtime <ms> btime <ms> [winc <ms>] [binc <ms>]

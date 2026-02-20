@@ -23,6 +23,7 @@ pub enum UciCommand {
 #[derive(Debug, PartialEq, Eq)]
 pub struct GoParams {
     pub depth: Option<u8>,
+    pub mate: Option<u8>,
     pub movetime: Option<Duration>,
     pub wtime: Option<Duration>,
     pub btime: Option<Duration>,
@@ -35,6 +36,7 @@ impl GoParams {
     fn new() -> Self {
         Self {
             depth: None,
+            mate: None,
             movetime: None,
             wtime: None,
             btime: None,
