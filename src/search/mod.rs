@@ -172,7 +172,7 @@ mod tests {
 
     #[test]
     fn report_forced_moves_without_searching() {
-        let mut pos = parse_fen("3R2k1/5p1p/6p1/8/8/8/8/4K3 b - - 0 1");
+        let mut pos = parse_fen("3R2k1/5p1p/6p1/8/8/8/8/4K3 b - -");
         let mut tt = TranspositionTable::new(1);
         let reporter = TestReporter::new();
         let mut stopper = Stopper::new();

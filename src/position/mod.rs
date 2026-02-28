@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn move_a_piece() {
-        let mut pos = parse_fen("8/8/8/8/8/8/8/5R2 w - - 0 1");
+        let mut pos = parse_fen("8/8/8/8/8/8/8/5R2 w - -");
 
         let mv = Move {
             piece: WR,
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn undo_moving_a_piece() {
-        let mut pos = parse_fen("4k3/8/8/8/8/8/8/4KR2 w - - 0 1");
+        let mut pos = parse_fen("4k3/8/8/8/8/8/8/4KR2 w - -");
 
         let mv = Move {
             piece: WR,
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn capture_a_piece() {
-        let mut pos = parse_fen("8/8/8/5p2/3N4/8/8/8 w - - 0 1");
+        let mut pos = parse_fen("8/8/8/5p2/3N4/8/8/8 w - -");
 
         let mv = Move {
             piece: WN,
@@ -387,7 +387,7 @@ mod tests {
 
     #[test]
     fn undo_capturing_a_piece() {
-        let mut pos = parse_fen("4k3/8/8/5p2/3N4/8/8/4K3 w - - 0 1");
+        let mut pos = parse_fen("4k3/8/8/5p2/3N4/8/8/4K3 w - -");
 
         let mv = Move {
             piece: WN,
@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn castle_king_side() {
-        let mut pos = parse_fen("8/8/8/8/8/8/8/4K2R w K - 0 1");
+        let mut pos = parse_fen("8/8/8/8/8/8/8/4K2R w K -");
 
         let mv = Move {
             piece: WK,
@@ -431,7 +431,7 @@ mod tests {
 
     #[test]
     fn undo_castle_king_side() {
-        let mut pos = parse_fen("4k3/8/8/8/8/8/8/4K2R w K - 0 1");
+        let mut pos = parse_fen("4k3/8/8/8/8/8/8/4K2R w K -");
 
         let mv = Move {
             piece: WK,
@@ -456,7 +456,7 @@ mod tests {
 
     #[test]
     fn moving_a_rook_removes_the_relevant_castling_rights() {
-        let mut pos = parse_fen("8/8/8/8/8/8/8/R3K2R w KQ - 0 1");
+        let mut pos = parse_fen("8/8/8/8/8/8/8/R3K2R w KQ -");
 
         let mv = Move {
             piece: WR,
@@ -474,7 +474,7 @@ mod tests {
 
     #[test]
     fn capturing_a_rook_removes_the_relevant_castling_rights() {
-        let mut pos = parse_fen("8/8/8/8/3b4/8/8/R3K2R b KQ - 0 1");
+        let mut pos = parse_fen("8/8/8/8/3b4/8/8/R3K2R b KQ -");
 
         let mv = Move {
             piece: BB,
@@ -492,7 +492,7 @@ mod tests {
 
     #[test]
     fn promote_a_pawn() {
-        let mut pos = parse_fen("8/4P3/8/8/8/8/8/8 w - - 0 1");
+        let mut pos = parse_fen("8/4P3/8/8/8/8/8/8 w - -");
 
         let mv = Move {
             piece: WP,
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn undo_promoting_a_pawn() {
-        let mut pos = parse_fen("4k3/2P5/8/8/8/8/8/4K3 w - - 0 1");
+        let mut pos = parse_fen("4k3/2P5/8/8/8/8/8/4K3 w - -");
 
         let mv = Move {
             piece: WP,
@@ -531,7 +531,7 @@ mod tests {
 
     #[test]
     fn undo_promoting_a_pawn_with_capture() {
-        let mut pos = parse_fen("1n2k3/2P5/8/8/8/8/8/4K3 w - - 0 1");
+        let mut pos = parse_fen("1n2k3/2P5/8/8/8/8/8/4K3 w - -");
 
         let mv = Move {
             piece: WP,
@@ -551,7 +551,7 @@ mod tests {
 
     #[test]
     fn capture_a_pawn_en_passant() {
-        let mut pos = parse_fen("8/8/8/3Pp3/8/8/8/8 w - e6 0 1");
+        let mut pos = parse_fen("8/8/8/3Pp3/8/8/8/8 w - e6");
 
         let mv = Move {
             piece: WP,
@@ -571,7 +571,7 @@ mod tests {
 
     #[test]
     fn undo_capturing_a_pawn_en_passant() {
-        let mut pos = parse_fen("4k3/8/8/3Pp3/8/8/8/4K3 w - e6 0 1");
+        let mut pos = parse_fen("4k3/8/8/3Pp3/8/8/8/4K3 w - e6");
 
         let mv = Move {
             piece: WP,
@@ -593,7 +593,7 @@ mod tests {
 
     #[test]
     fn set_the_en_passant_square_for_a_white_double_pawn_advance() {
-        let mut pos = parse_fen("8/8/8/8/8/8/4P3/8 w - - 0 1");
+        let mut pos = parse_fen("8/8/8/8/8/8/4P3/8 w - -");
 
         let mv = Move {
             piece: WP,
@@ -611,7 +611,7 @@ mod tests {
 
     #[test]
     fn set_the_en_passant_square_for_a_black_double_pawn_advance() {
-        let mut pos = parse_fen("8/4p3/8/8/8/8/8/8 b - - 0 1");
+        let mut pos = parse_fen("8/4p3/8/8/8/8/8/8 b - -");
 
         let mv = Move {
             piece: BP,
@@ -677,7 +677,7 @@ mod tests {
 
     #[test]
     fn increment_the_half_move_clock_for_non_pawn_or_non_capture_moves() {
-        let mut pos = parse_fen("8/4p3/8/8/8/8/4P3/4K3 w - - 0 1");
+        let mut pos = parse_fen("8/4p3/8/8/8/8/4P3/4K3 w - -");
 
         let mv = Move {
             piece: WK,
@@ -855,7 +855,7 @@ mod tests {
 
     #[test]
     fn repetition_draw_not_counted_when_en_passant_availability_differs() {
-        let mut pos = parse_fen("4k3/4p3/8/3P4/8/8/8/4K1Nn w - - 0 1");
+        let mut pos = parse_fen("4k3/4p3/8/3P4/8/8/8/4K1Nn w - -");
 
         let mut moves = [
             make_move(WN, G1, F3, None), // Nf3
@@ -884,18 +884,18 @@ mod tests {
     #[test]
     fn has_checkmate_material() {
         let cases = [
-            "4k3/8/8/8/8/8/4P3/4K3 w - - 0 1",    // KPvK, white
-            "4k3/4p3/8/8/8/8/8/4K3 w - - 0 1",    // KPvK, black
-            "4k3/8/8/8/8/8/8/1NB1K3 w - - 0 1",   // KNBvK, white
-            "1nb1k3/8/8/8/8/8/8/4K3 w - - 0 1",   // KNBvK, black
-            "4k3/8/8/8/8/8/8/2B1KB2 w - - 0 1",   // KBBvK, white, bishop pair
-            "2b1kb2/8/8/8/8/8/8/4K3 w - - 0 1",   // KBBvK, black, bishop pair
-            "4k3/8/8/8/8/8/8/1NN1K1N1 w - - 0 1", // KNNNvK, white
-            "1nn1k1n1/8/8/8/8/8/8/4K3 w - - 0 1", // KNNNvK, black
-            "4k3/8/8/8/8/8/8/R3K3 w - - 0 1",     // KRvK, white
-            "r3k3/8/8/8/8/8/8/4K3 w - - 0 1",     // KRvK, black
-            "4k3/8/8/8/8/8/8/3QK3 w - - 0 1",     // KQvK, white
-            "3qk3/8/8/8/8/8/8/4K3 w - - 0 1",     // KQvK, black
+            "4k3/8/8/8/8/8/4P3/4K3 w - -",    // KPvK, white
+            "4k3/4p3/8/8/8/8/8/4K3 w - -",    // KPvK, black
+            "4k3/8/8/8/8/8/8/1NB1K3 w - -",   // KNBvK, white
+            "1nb1k3/8/8/8/8/8/8/4K3 w - -",   // KNBvK, black
+            "4k3/8/8/8/8/8/8/2B1KB2 w - -",   // KBBvK, white, bishop pair
+            "2b1kb2/8/8/8/8/8/8/4K3 w - -",   // KBBvK, black, bishop pair
+            "4k3/8/8/8/8/8/8/1NN1K1N1 w - -", // KNNNvK, white
+            "1nn1k1n1/8/8/8/8/8/8/4K3 w - -", // KNNNvK, black
+            "4k3/8/8/8/8/8/8/R3K3 w - -",     // KRvK, white
+            "r3k3/8/8/8/8/8/8/4K3 w - -",     // KRvK, black
+            "4k3/8/8/8/8/8/8/3QK3 w - -",     // KQvK, white
+            "3qk3/8/8/8/8/8/8/4K3 w - -",     // KQvK, black
         ];
         for fen in cases {
             let pos = parse_fen(fen);
@@ -910,14 +910,14 @@ mod tests {
     #[test]
     fn not_has_checkmate_material() {
         let cases = [
-            "4k3/8/8/8/8/8/8/4K3 w - - 0 1",      // KvK
-            "4k3/8/8/8/8/8/8/4K1N1 w - - 0 1",    // KNvK
-            "4k3/8/8/8/8/8/8/2B1K3 w - - 0 1",    // KBvK
-            "4k3/8/8/8/8/8/8/1N2K1N1 w - - 0 1",  // KNNvK
-            "4k1n1/8/8/8/8/8/8/4K1N1 w - - 0 1",  // KNvKN
-            "4k1b1/8/8/8/8/8/8/4K1N1 w - - 0 1",  // KNvKB
-            "4kb2/8/8/8/8/8/8/2B1K3 w - - 0 1",   // KBvKB, same colour bishops
-            "4k3/8/8/8/8/8/8/B1B1K1B1 w - - 0 1", // KBBBvK
+            "4k3/8/8/8/8/8/8/4K3 w - -",      // KvK
+            "4k3/8/8/8/8/8/8/4K1N1 w - -",    // KNvK
+            "4k3/8/8/8/8/8/8/2B1K3 w - -",    // KBvK
+            "4k3/8/8/8/8/8/8/1N2K1N1 w - -",  // KNNvK
+            "4k1n1/8/8/8/8/8/8/4K1N1 w - -",  // KNvKN
+            "4k1b1/8/8/8/8/8/8/4K1N1 w - -",  // KNvKB
+            "4kb2/8/8/8/8/8/8/2B1K3 w - -",   // KBvKB, same colour bishops
+            "4k3/8/8/8/8/8/8/B1B1K1B1 w - -", // KBBBvK
         ];
         for fen in cases {
             let pos = parse_fen(fen);

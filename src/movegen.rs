@@ -235,72 +235,72 @@ mod tests {
 
     #[test]
     fn legal_move_count_in_checkmate_is_zero() {
-        assert_legal_move_count("rnb1kbnr/pppp1ppp/4p3/8/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq - 0 1", 0);
+        assert_legal_move_count("rnb1kbnr/pppp1ppp/4p3/8/6Pq/5P2/PPPPP2P/RNBQKBNR w KQkq -", 0);
     }
 
     #[test]
     fn legal_move_count_in_check_is_limited() {
-        assert_legal_move_count("rnbqkbnr/1pp1p1pp/p2p1p2/1B6/8/4P3/PPPP1PPP/RNBQK1NR b KQq - 0 1", 7);
+        assert_legal_move_count("rnbqkbnr/1pp1p1pp/p2p1p2/1B6/8/4P3/PPPP1PPP/RNBQK1NR b KQq -", 7);
     }
 
     #[test]
     fn white_pawn_moves() {
-        assert_pseudo_legal_move_count("8/8/8/8/8/8/4P3/8 w - - 0 1", 2);
+        assert_pseudo_legal_move_count("8/8/8/8/8/8/4P3/8 w - -", 2);
     }
 
     #[test]
     fn black_pawn_moves() {
-        assert_pseudo_legal_move_count("8/4p3/8/8/8/8/8/8 b - - 0 1", 2);
+        assert_pseudo_legal_move_count("8/4p3/8/8/8/8/8/8 b - -", 2);
     }
 
     #[test]
     fn single_pawn_advance() {
-        assert_pseudo_legal_move_count("8/8/8/8/4p3/8/4P3/8 w - - 0 1", 1);
+        assert_pseudo_legal_move_count("8/8/8/8/4p3/8/4P3/8 w - -", 1);
     }
 
     #[test]
     fn double_pawn_advance() {
-        assert_pseudo_legal_move_count("8/8/8/8/8/4p3/4P3/8 w - - 0 1", 0);
+        assert_pseudo_legal_move_count("8/8/8/8/8/4p3/4P3/8 w - -", 0);
     }
 
     #[test]
     fn knight_moves() {
-        assert_pseudo_legal_move_count("8/8/8/8/3N4/8/8/8 w - - 0 1", 8);
+        assert_pseudo_legal_move_count("8/8/8/8/3N4/8/8/8 w - -", 8);
     }
 
     #[test]
     fn bishop_moves() {
-        assert_pseudo_legal_move_count("8/r7/5n2/8/3B4/8/8/8 w - - 0 1", 11);
+        assert_pseudo_legal_move_count("8/r7/5n2/8/3B4/8/8/8 w - -", 11);
     }
 
     #[test]
     fn rook_moves() {
-        assert_pseudo_legal_move_count("8/3b4/8/8/1n1R4/8/8/8 w - - 0 1", 12);
+        assert_pseudo_legal_move_count("8/3b4/8/8/1n1R4/8/8/8 w - -", 12);
     }
 
     #[test]
     fn king_moves() {
-        assert_pseudo_legal_move_count("8/8/8/8/8/8/8/4K3 w - - 0 1", 5);
+        assert_pseudo_legal_move_count("8/8/8/8/8/8/8/4K3 w - -", 5);
     }
 
     #[test]
     fn pawn_promotion_with_advance() {
-        assert_pseudo_legal_move_count("8/4P3/8/8/8/8/8/8 w - - 0 1", 4);
+        assert_pseudo_legal_move_count("8/4P3/8/8/8/8/8/8 w - -", 4);
     }
 
     #[test]
     fn pawn_promotion_with_capture() {
-        assert_pseudo_legal_move_count("3qk3/4P3/8/8/8/8/8/8 w - - 0 1", 4);
+        assert_pseudo_legal_move_count("3qk3/4P3/8/8/8/8/8/8 w - -", 4);
     }
 
     #[test]
     fn pawn_promotion_with_advance_or_capture() {
-        assert_pseudo_legal_move_count("3q4/4P3/8/8/8/8/8/8 w - - 0 1", 8);
+        assert_pseudo_legal_move_count("3q4/4P3/8/8/8/8/8/8 w - -", 8);
     }
 
     #[test]
     fn castle_king_side_only() {
-        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w K - 0 1");
+        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w K -");
 
         let moves = generate_all_moves(&pos);
 
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn castle_queen_side_only() {
-        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w Q - 0 1");
+        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w Q -");
 
         let moves = generate_all_moves(&pos);
 
@@ -318,7 +318,7 @@ mod tests {
 
     #[test]
     fn castle_king_and_queen_side() {
-        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w KQ - 0 1");
+        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w KQ -");
 
         let moves = generate_all_moves(&pos);
 
@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn no_castling_when_the_target_square_is_occupied_by_a_friendly_piece() {
-        let pos = parse_fen("8/8/8/8/8/8/8/R1B1K1NR w KQ - 0 1");
+        let pos = parse_fen("8/8/8/8/8/8/8/R1B1K1NR w KQ -");
 
         let moves = generate_all_moves(&pos);
 
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn no_castling_when_the_target_square_is_occupied_by_an_opponent_piece() {
-        let pos = parse_fen("8/8/8/8/8/8/8/R1b1K1nR w KQ - 0 1");
+        let pos = parse_fen("8/8/8/8/8/8/8/R1b1K1nR w KQ -");
 
         let moves = generate_all_moves(&pos);
 
@@ -345,7 +345,7 @@ mod tests {
 
     #[test]
     fn no_castling_when_a_piece_blocks_the_path() {
-        let pos = parse_fen("8/8/8/8/8/8/8/RN2KB1R w KQ - 0 1");
+        let pos = parse_fen("8/8/8/8/8/8/8/RN2KB1R w KQ -");
 
         let moves = generate_all_moves(&pos);
 
@@ -354,7 +354,7 @@ mod tests {
 
     #[test]
     fn no_castling_when_the_king_path_is_attacked() {
-        let pos = parse_fen("8/8/8/8/8/4n3/8/R3K2R w KQ - 0 1");
+        let pos = parse_fen("8/8/8/8/8/4n3/8/R3K2R w KQ -");
 
         let moves = generate_all_moves(&pos);
 
@@ -363,7 +363,7 @@ mod tests {
 
     #[test]
     fn no_castling_when_the_right_was_previously_lost() {
-        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w Q - 0 1");
+        let pos = parse_fen("8/8/8/8/8/8/8/R3K2R w Q -");
 
         let moves = generate_all_moves(&pos);
 
@@ -377,7 +377,7 @@ mod tests {
 
     #[test]
     fn no_castling_out_of_check() {
-        let pos = parse_fen("8/8/8/8/8/3n4/8/R3K2R w KQ - 0 1");
+        let pos = parse_fen("8/8/8/8/8/3n4/8/R3K2R w KQ -");
 
         let moves = generate_all_moves(&pos);
 
@@ -386,7 +386,7 @@ mod tests {
 
     #[test]
     fn en_passant_capture() {
-        let pos = parse_fen("8/8/8/3PpP2/8/8/8/8 w - e6 0 1");
+        let pos = parse_fen("8/8/8/3PpP2/8/8/8/8 w - e6");
 
         let moves = generate_all_moves(&pos);
 
@@ -396,7 +396,7 @@ mod tests {
 
     #[test]
     fn ignore_friendly_piece_captures() {
-        assert_pseudo_legal_move_count("8/8/5p2/5P2/3N4/8/8/8 w - - 0 1", 7);
+        assert_pseudo_legal_move_count("8/8/5p2/5P2/3N4/8/8/8 w - -", 7);
     }
 
     fn assert_pseudo_legal_move_count(fen: &str, count: usize) {
