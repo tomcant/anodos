@@ -85,14 +85,14 @@ impl std::str::FromStr for Position {
 
     fn from_str(fen: &str) -> Result<Self, Self::Err> {
         let parts: Vec<_> = fen.split_whitespace().collect();
-        const NUM_PARTS: usize = 6;
+        let num_parts = parts.len();
 
-        if parts.len() < NUM_PARTS {
-            return Err(format!("FEN must contain {NUM_PARTS} parts, got {}", parts.len()));
+        if num_parts < 4 {
+            return Err(format!("FEN must contain at least 4 parts, got {num_parts}"));
         }
 
-        let half_move_clock = parts[4].parse().unwrap();
-        let full_move_counter = parts[5].parse().unwrap();
+        let half_move_clock = if num_parts > 4 { parts[4].parse().unwrap() } else { 0 };
+        let full_move_counter = if num_parts > 5 { parts[5].parse().unwrap() } else { 1 };
 
         Ok(Position::new(
             parse_board(parts[0])?,
@@ -206,29 +206,29 @@ mod tests {
 
     #[test]
     fn parse_error_with_too_few_parts() {
-        assert_parse_error("w - - 0 1", "FEN must contain 6 parts, got 5");
+        assert_parse_error("w - -", "FEN must contain at least 4 parts, got 3");
     }
 
     #[test]
     fn parse_error_with_wrong_number_of_rows() {
-        assert_parse_error("8/8 w - - 0 1", "board must contain 8 rows, got 2");
-        assert_parse_error("8/8/8/8/8/8/8/8/1 w - - 0 1", "board must contain 8 rows, got 9");
+        assert_parse_error("8/8 w - -", "board must contain 8 rows, got 2");
+        assert_parse_error("8/8/8/8/8/8/8/8/1 w - -", "board must contain 8 rows, got 9");
     }
 
     #[test]
     fn parse_error_with_wrong_number_of_squares() {
-        assert_parse_error("8/8/8/8/8/8/8/7 w - - 0 1", "board must contain 64 squares");
-        assert_parse_error("8/8/8/8/8/8/8/9 w - - 0 1", "board must contain 64 squares");
+        assert_parse_error("8/8/8/8/8/8/8/7 w - -", "board must contain 64 squares");
+        assert_parse_error("8/8/8/8/8/8/8/9 w - -", "board must contain 64 squares");
     }
 
     #[test]
     fn parse_error_with_invalid_piece() {
-        assert_parse_error("8/8/8/8/8/8/8/4a3 w - - 0 1", "invalid piece 'a'");
+        assert_parse_error("8/8/8/8/8/8/8/4a3 w - -", "invalid piece 'a'");
     }
 
     #[test]
     fn parse_with_white_to_move() {
-        let parse = "8/8/8/8/8/8/8/8 w - - 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 w - -".parse::<Position>();
 
         assert!(parse.is_ok());
         assert_eq!(parse.unwrap().colour_to_move, Colour::White);
@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn parse_with_black_to_move() {
-        let parse = "8/8/8/8/8/8/8/8 b - - 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 b - -".parse::<Position>();
 
         assert!(parse.is_ok());
         assert_eq!(parse.unwrap().colour_to_move, Colour::Black);
@@ -244,12 +244,12 @@ mod tests {
 
     #[test]
     fn parse_error_with_invalid_colour_to_move() {
-        assert_parse_error("8/8/8/8/8/8/8/8 W - - 0 1", "invalid colour to move 'W'");
+        assert_parse_error("8/8/8/8/8/8/8/8 W - -", "invalid colour to move 'W'");
     }
 
     #[test]
     fn parse_with_no_castling_rights() {
-        let parse = "8/8/8/8/8/8/8/8 w - - 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 w - -".parse::<Position>();
 
         assert!(parse.is_ok());
         assert_eq!(parse.unwrap().castling_rights, CastlingRights::none());
@@ -257,7 +257,7 @@ mod tests {
 
     #[test]
     fn parse_with_partial_castling_rights() {
-        let parse = "8/8/8/8/8/8/8/8 w Kq - 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 w Kq -".parse::<Position>();
 
         assert!(parse.is_ok());
 
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn parse_with_all_castling_rights() {
-        let parse = "8/8/8/8/8/8/8/8 w KQkq - 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 w KQkq -".parse::<Position>();
 
         assert!(parse.is_ok());
         assert_eq!(parse.unwrap().castling_rights, CastlingRights::all());
@@ -277,12 +277,12 @@ mod tests {
 
     #[test]
     fn parse_error_with_invalid_castling_rights() {
-        assert_parse_error("8/8/8/8/8/8/8/8 w K- - 0 1", "invalid castling rights");
+        assert_parse_error("8/8/8/8/8/8/8/8 w K- -", "invalid castling rights");
     }
 
     #[test]
     fn parse_with_no_en_passant_square() {
-        let parse = "8/8/8/8/8/8/8/8 w - - 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 w - -".parse::<Position>();
 
         assert!(parse.is_ok());
         assert_eq!(parse.unwrap().en_passant_square, None);
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn parse_with_en_passant_square_3rd_rank() {
-        let parse = "8/8/8/8/8/8/8/8 w - f3 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 w - f3".parse::<Position>();
 
         assert!(parse.is_ok());
         assert_eq!(parse.unwrap().en_passant_square, Some(F3));
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn parse_with_en_passant_square_6th_rank() {
-        let parse = "8/8/8/8/8/8/8/8 w - f6 0 1".parse::<Position>();
+        let parse = "8/8/8/8/8/8/8/8 w - f6".parse::<Position>();
 
         assert!(parse.is_ok());
         assert_eq!(parse.unwrap().en_passant_square, Some(F6));
@@ -306,7 +306,7 @@ mod tests {
 
     #[test]
     fn parse_error_with_invalid_en_passant_square() {
-        assert_parse_error("8/8/8/8/8/8/8/8 w - f4 0 1", "invalid en passant square");
+        assert_parse_error("8/8/8/8/8/8/8/8 w - f4", "invalid en passant square");
     }
 
     #[test]

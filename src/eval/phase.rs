@@ -33,7 +33,7 @@ mod tests {
 
     #[test]
     fn kings_only_has_zero_phase() {
-        let pos = parse_fen("4k3/8/8/8/8/8/8/4K3 w - - 0 1");
+        let pos = parse_fen("4k3/8/8/8/8/8/8/4K3 w - -");
         assert_eq!(phase(&pos.board), 0);
     }
 }

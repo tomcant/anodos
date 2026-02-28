@@ -152,7 +152,7 @@ mod tests {
         history.store(-100, WP, C5); // Quiet 3 is bad, score low
 
         let mut picker = MovePicker::new(
-            &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - - 0 1"),
+            &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - -"),
             MovePickerMode::AllMoves {
                 killers: &killers,
                 history: &history,
@@ -209,7 +209,7 @@ mod tests {
         let promotion = make_promotion_move(Colour::White, A7, A8, WQ);
 
         let mut picker = MovePicker::new(
-            &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/8/4K3 w - - 0 1"),
+            &parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/8/4K3 w - -"),
             MovePickerMode::NonQuiets,
         );
 
