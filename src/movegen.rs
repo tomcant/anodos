@@ -7,7 +7,6 @@ use crate::square::{
     BACK_RANKS,
     Square::{self, *},
 };
-use lazy_static::lazy_static;
 use smallvec::SmallVec;
 
 pub const MAX_MOVES: usize = 128;
@@ -15,12 +14,10 @@ pub type MoveList = SmallVec<[Move; MAX_MOVES]>;
 
 const PAWN_START_RANKS: [u8; 2] = [1, 6];
 
-lazy_static! {
-    static ref WHITE_KING_CASTLING_PATH: u64 = F1.u64() | G1.u64();
-    static ref BLACK_KING_CASTLING_PATH: u64 = F8.u64() | G8.u64();
-    static ref WHITE_QUEEN_CASTLING_PATH: u64 = B1.u64() | C1.u64() | D1.u64();
-    static ref BLACK_QUEEN_CASTLING_PATH: u64 = B8.u64() | C8.u64() | D8.u64();
-}
+const WHITE_KING_CASTLING_PATH: u64 = F1.u64() | G1.u64();
+const BLACK_KING_CASTLING_PATH: u64 = F8.u64() | G8.u64();
+const WHITE_QUEEN_CASTLING_PATH: u64 = B1.u64() | C1.u64() | D1.u64();
+const BLACK_QUEEN_CASTLING_PATH: u64 = B8.u64() | C8.u64() | D8.u64();
 
 pub fn generate_all_moves(pos: &Position) -> MoveList {
     let mut moves = MoveList::new();
@@ -192,14 +189,14 @@ fn white_castling(rights: CastlingRights, board: &Board) -> u64 {
     let mut castling = 0;
 
     if rights.has(CastlingRight::WhiteKing)
-        && !board.has_occupancy_at(*WHITE_KING_CASTLING_PATH)
+        && !board.has_occupancy_at(WHITE_KING_CASTLING_PATH)
         && !is_attacked(F1, Colour::Black, board)
     {
         castling |= G1.u64();
     }
 
     if rights.has(CastlingRight::WhiteQueen)
-        && !board.has_occupancy_at(*WHITE_QUEEN_CASTLING_PATH)
+        && !board.has_occupancy_at(WHITE_QUEEN_CASTLING_PATH)
         && !is_attacked(D1, Colour::Black, board)
     {
         castling |= C1.u64();
@@ -212,14 +209,14 @@ fn black_castling(rights: CastlingRights, board: &Board) -> u64 {
     let mut castling = 0;
 
     if rights.has(CastlingRight::BlackKing)
-        && !board.has_occupancy_at(*BLACK_KING_CASTLING_PATH)
+        && !board.has_occupancy_at(BLACK_KING_CASTLING_PATH)
         && !is_attacked(F8, Colour::White, board)
     {
         castling |= G8.u64();
     }
 
     if rights.has(CastlingRight::BlackQueen)
-        && !board.has_occupancy_at(*BLACK_QUEEN_CASTLING_PATH)
+        && !board.has_occupancy_at(BLACK_QUEEN_CASTLING_PATH)
         && !is_attacked(D8, Colour::White, board)
     {
         castling |= C8.u64();

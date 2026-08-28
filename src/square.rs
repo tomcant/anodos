@@ -21,6 +21,17 @@ pub const FILES: [u64; 8] = [
     FILE_A << 7,
 ];
 
+pub const ADJACENT_FILES: [u64; 8] = [
+    FILES[1],
+    FILES[0] | FILES[2],
+    FILES[1] | FILES[3],
+    FILES[2] | FILES[4],
+    FILES[3] | FILES[5],
+    FILES[4] | FILES[6],
+    FILES[5] | FILES[7],
+    FILES[6],
+];
+
 #[rustfmt::skip]
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,7 +74,7 @@ impl Square {
         *self as u8
     }
 
-    pub fn u64(&self) -> u64 {
+    pub const fn u64(&self) -> u64 {
         1 << (*self as u8)
     }
 

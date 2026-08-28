@@ -8,7 +8,6 @@ mod movegen;
 mod perft;
 mod piece;
 mod position;
-mod rng;
 mod search;
 mod square;
 mod uci;

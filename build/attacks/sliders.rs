@@ -1,33 +1,11 @@
-// Build-time generator for fancy magic attack tables
+use crate::rng::{RNG_SEED, XorShift64};
+use crate::square::Square;
 
-#[path = "src/colour.rs"]
-mod colour;
-#[path = "src/rng.rs"]
-mod rng;
-#[allow(dead_code)]
-#[path = "src/square.rs"]
-mod square;
-
-use rng::XorShift64;
-use square::Square;
-use std::env;
-use std::fs;
-use std::path::PathBuf;
-
-// https://en.wikipedia.org/wiki/Hash_function#Fibonacci_hashing
-const RNG_SEED: u64 = 0x9E3779B97F4A7C15;
-
-fn main() {
-    for dep in ["colour.rs", "rng.rs", "square.rs"] {
-        println!("cargo::rerun-if-changed=src/{dep}");
-    }
-
+pub fn build() -> String {
     let mut out = "pub struct Magic { pub mask: u64, pub num: u64, pub shift: u8, pub offset: usize }\n".to_string();
     out.push_str(&build_magics("ROOK", &rook_mask, &rook_attacks));
     out.push_str(&build_magics("BISHOP", &bishop_mask, &bishop_attacks));
-
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    fs::write(out_dir.join("magic.rs"), out).unwrap();
+    out
 }
 
 fn build_magics(piece_name: &str, mask_fn: &dyn Fn(Square) -> u64, attacks_fn: &dyn Fn(Square, u64) -> u64) -> String {
@@ -339,7 +317,7 @@ fn bit_permutation_from_index(index: usize, bits: &[u64]) -> u64 {
 
 impl XorShift64 {
     #[inline]
-    pub fn next_sparse(&mut self) -> u64 {
+    fn next_sparse(&mut self) -> u64 {
         self.next().unwrap() & self.next().unwrap() & self.next().unwrap()
     }
 }
