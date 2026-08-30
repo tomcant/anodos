@@ -2,8 +2,10 @@ use super::EvalTerm;
 use crate::colour::Colour;
 use crate::piece::Piece;
 use crate::position::Board;
-use crate::square::{FILES, Square};
-use lazy_static::lazy_static;
+use crate::square::{ADJACENT_FILES, FILES, Square};
+
+// Include build-generated passed pawn masks
+include!(concat!(env!("OUT_DIR"), "/passed_pawns.rs"));
 
 const DOUBLED_MG: i32 = -12;
 const DOUBLED_EG: i32 = -8;
@@ -68,10 +70,8 @@ fn passed(colour: Colour, board: &Board) -> EvalTerm {
 
     while our_pawns != 0 {
         let square = Square::next(&mut our_pawns);
-        let file = square.file() as usize;
-        let blockers = their_pawns & (FILES[file] | ADJACENT_FILES[file]);
 
-        if blockers & SQUARES_IN_FRONT[colour][square] == 0 {
+        if their_pawns & PASSED_PAWN_MASKS[colour][square] == 0 {
             let rank = square.rank() as usize;
             mg += PASSED_MG[colour][rank];
             eg += PASSED_EG[colour][rank];
@@ -79,50 +79,4 @@ fn passed(colour: Colour, board: &Board) -> EvalTerm {
     }
 
     EvalTerm::new(mg, eg)
-}
-
-const ADJACENT_FILES: [u64; 8] = [
-    FILES[1],
-    FILES[0] | FILES[2],
-    FILES[1] | FILES[3],
-    FILES[2] | FILES[4],
-    FILES[3] | FILES[5],
-    FILES[4] | FILES[6],
-    FILES[5] | FILES[7],
-    FILES[6],
-];
-
-lazy_static! {
-    static ref SQUARES_IN_FRONT: [[u64; 64]; 2] = [
-        build_squares_in_front(Colour::White),
-        build_squares_in_front(Colour::Black),
-    ];
-}
-
-fn build_squares_in_front(colour: Colour) -> [u64; 64] {
-    let mut masks = [0; 64];
-    let squares: [_; 64] = std::array::from_fn(|index| Square::from_index(index as u8));
-
-    for square in squares {
-        let rank = square.rank() as u32;
-
-        masks[square] = match colour {
-            Colour::White => {
-                if rank < 7 {
-                    !((1 << ((rank + 1) << 3)) - 1)
-                } else {
-                    0
-                }
-            }
-            _ => {
-                if rank > 0 {
-                    (1 << (rank << 3)) - 1
-                } else {
-                    0
-                }
-            }
-        };
-    }
-
-    masks
 }

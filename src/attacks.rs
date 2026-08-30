@@ -1,11 +1,10 @@
 use crate::colour::Colour;
 use crate::piece::Piece::{self, *};
 use crate::position::Board;
-use crate::square::{FILES, Square};
-use lazy_static::lazy_static;
+use crate::square::Square;
 
-// Include build-generated magic tables
-include!(concat!(env!("OUT_DIR"), "/magic.rs"));
+// Include build-generated attack tables
+include!(concat!(env!("OUT_DIR"), "/attacks.rs"));
 
 #[inline]
 pub fn is_in_check(colour: Colour, board: &Board) -> bool {
@@ -80,69 +79,6 @@ pub fn rook_attacks(square: Square, occupancy: u64) -> u64 {
 #[inline]
 pub fn king_attacks(square: Square) -> u64 {
     KING_ATTACKS[square]
-}
-
-lazy_static! {
-    static ref SQUARES: [Square; 64] = (0..64).map(Square::from_index).collect::<Vec<_>>().try_into().unwrap();
-
-    static ref PAWN_ATTACKS: [[u64; 64]; 2] = {
-        let mut attacks = [[0; 64]; 2];
-
-        for square in SQUARES.iter() {
-            let square_u64 = square.u64();
-
-            attacks[Colour::White][*square] =
-                  (square_u64 & !FILES[0]) << 7 | (square_u64 & !FILES[7]) << 9;
-
-            attacks[Colour::Black][*square] =
-                  (square_u64 & !FILES[7]) >> 7 | (square_u64 & !FILES[0]) >> 9;
-        }
-
-        attacks
-    };
-
-    static ref KNIGHT_ATTACKS: [u64; 64] = {
-        let mut attacks = [0; 64];
-
-        for square in SQUARES.iter() {
-            let square_u64 = square.u64();
-
-            attacks[*square] =
-                  (square_u64 & !FILES[0] & !FILES[1]) << 6  // up 1, left 2
-                | (square_u64 & !FILES[6] & !FILES[7]) << 10 // up 1, right 2
-                | (square_u64 & !FILES[0]) << 15             // up 2, left 1
-                | (square_u64 & !FILES[7]) << 17             // up 2, right 1
-
-                | (square_u64 & !FILES[6] & !FILES[7]) >> 6  // down 1, right 2
-                | (square_u64 & !FILES[0] & !FILES[1]) >> 10 // down 1, left 2
-                | (square_u64 & !FILES[7]) >> 15             // down 2, right 1
-                | (square_u64 & !FILES[0]) >> 17;            // down 2, left 1
-        }
-
-        attacks
-    };
-
-    static ref KING_ATTACKS: [u64; 64] = {
-        let mut attacks = [0; 64];
-
-        for square in SQUARES.iter() {
-            let square_u64 = square.u64();
-
-            attacks[*square] =
-                  (square_u64 & !FILES[7]) << 1
-                | (square_u64 & !FILES[0]) >> 1
-
-                | square_u64 << 8
-                | (square_u64 & !FILES[0]) << 7
-                | (square_u64 & !FILES[7]) << 9
-
-                | square_u64 >> 8
-                | (square_u64 & !FILES[7]) >> 7
-                | (square_u64 & !FILES[0]) >> 9;
-        }
-
-        attacks
-    };
 }
 
 #[cfg(test)]

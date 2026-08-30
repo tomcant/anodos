@@ -5,7 +5,6 @@ use crate::r#move::Move;
 use crate::piece::Piece::{self, *};
 use crate::position::Board;
 use crate::square::Square;
-use lazy_static::lazy_static;
 
 pub fn see_ge(board: &Board, mv: &Move) -> bool {
     debug_assert!(mv.captured_piece.is_some());
@@ -105,16 +104,16 @@ fn piece_weight(piece: Piece) -> i32 {
     SEE_PIECE_WEIGHTS[piece]
 }
 
-lazy_static! {
-    // SEE piece weights are based on the material weights but the king must be
-    // worth the most so that `see_ge()` doesn't return true for captures that
-    // leave the side to move in check.
-    static ref SEE_PIECE_WEIGHTS: [i32; 12] = {
-        let mut weights = PIECE_WEIGHTS;
-        weights[WK] = weights[WQ] + 1;
-        weights[BK] = weights[BQ] + 1;
-        weights
-    };
+// SEE piece weights are based on the material weights but the king must be
+// worth the most so that `see_ge()` doesn't return true for captures that
+// leave the side to move in check.
+static SEE_PIECE_WEIGHTS: [i32; 12] = build_see_piece_weights();
+
+const fn build_see_piece_weights() -> [i32; 12] {
+    let mut weights = PIECE_WEIGHTS;
+    weights[WK as usize] = weights[WQ as usize] + 1;
+    weights[BK as usize] = weights[BQ as usize] + 1;
+    weights
 }
 
 #[cfg(test)]

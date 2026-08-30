@@ -1,5 +1,7 @@
 // Random number generator used for deterministic table generation (Zobrist, magics)
-// https://en.wikipedia.org/wiki/Xorshift
+
+// https://en.wikipedia.org/wiki/Hash_function#Fibonacci_hashing
+pub const RNG_SEED: u64 = 0x9E3779B97F4A7C15;
 
 pub struct XorShift64(u64);
 
@@ -13,6 +15,7 @@ impl Iterator for XorShift64 {
     type Item = u64;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // https://en.wikipedia.org/wiki/Xorshift
         let mut x = self.0;
         x ^= x << 13;
         x ^= x >> 7;
