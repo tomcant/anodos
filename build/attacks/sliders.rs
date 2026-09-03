@@ -295,7 +295,7 @@ fn bit_positions(mut bb: u64) -> Vec<u64> {
     let mut bits = vec![];
 
     while bb != 0 {
-        let lsb = bb & bb.wrapping_neg();
+        let lsb = bb.isolate_lowest_one();
         bits.push(lsb);
         bb ^= lsb;
     }

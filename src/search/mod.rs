@@ -27,6 +27,12 @@ mod see;
 
 pub const MAX_DEPTH: u8 = u8::MAX;
 
+// Aspiration window tuning
+const ASP_MIN_DEPTH: u8 = 4;
+const ASP_BASE_DELTA: i32 = 25; // Quarter pawn
+const ASP_EXPANSION_FACTOR: i32 = 2;
+const ASP_MAX_RETRIES: u8 = 3;
+
 struct SearchState<'a> {
     pub report: Report,
     pub stopper: &'a Stopper<'a>,
@@ -36,11 +42,18 @@ struct SearchState<'a> {
     pub pv: PvTable,
 }
 
-// Aspiration window tuning
-const ASP_MIN_DEPTH: u8 = 4;
-const ASP_BASE_DELTA: i32 = 25; // Quarter pawn
-const ASP_EXPANSION_FACTOR: i32 = 2;
-const ASP_MAX_RETRIES: u8 = 3;
+impl<'a> SearchState<'a> {
+    fn new(tt: &'a mut TranspositionTable, stopper: &'a Stopper<'a>) -> Self {
+        Self {
+            report: Report::new(),
+            stopper,
+            tt,
+            killers: KillerMoves::new(),
+            history: HistoryTable::new(),
+            pv: PvTable::new(),
+        }
+    }
+}
 
 #[rustfmt::skip]
 pub fn search(
@@ -58,14 +71,7 @@ pub fn search(
         return;
     }
 
-    let mut ss = SearchState {
-        report: Report::new(),
-        stopper,
-        tt,
-        killers: KillerMoves::new(),
-        history: HistoryTable::new(),
-        pv: PvTable::new(),
-    };
+    let mut ss = SearchState::new(tt, stopper);
 
     let mut last_eval: i32 = 0;
     let max_depth = stopper.depth.unwrap_or(MAX_DEPTH);

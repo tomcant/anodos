@@ -6,6 +6,7 @@ use crate::piece::Piece::{self, *};
 use crate::position::Board;
 use crate::square::Square;
 
+#[inline(never)]
 pub fn see_ge(board: &Board, mv: &Move) -> bool {
     debug_assert!(mv.captured_piece.is_some());
 
@@ -38,11 +39,7 @@ pub fn see_ge(board: &Board, mv: &Move) -> bool {
             | (rook_attacks(mv.to, occupancy) & (rooks | queens))
             | (king_attacks(mv.to) & kings));
 
-    loop {
-        let Some((piece, square)) = least_valuable_attacker(colour_to_move, board, attackers) else {
-            break;
-        };
-
+    while let Some((piece, square)) = least_valuable_attacker(colour_to_move, board, attackers) {
         if piece.is_king() && attackers & board.pieces_by_colour(colour_to_move.flip()) != 0 {
             break;
         }

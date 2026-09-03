@@ -7,8 +7,8 @@ use crate::eval::terms::PIECE_WEIGHTS;
 
 const DELTA_MARGIN: i32 = 200;
 
-pub fn search(pos: &mut Position, mut alpha: i32, beta: i32, report: &mut Report) -> i32 {
-    report.nodes += 1;
+pub fn search(ss: &mut SearchState, pos: &mut Position, mut alpha: i32, beta: i32) -> i32 {
+    ss.report.nodes += 1;
 
     let eval = eval(pos);
 
@@ -21,9 +21,9 @@ pub fn search(pos: &mut Position, mut alpha: i32, beta: i32, report: &mut Report
     }
 
     let colour_to_move = pos.colour_to_move;
-    let mut move_picker = MovePicker::new(pos, MovePickerMode::NonQuiets);
+    let mut move_picker = MovePicker::new(MovePickerMode::Noisy);
 
-    while let Some(mv) = move_picker.pick() {
+    while let Some(mv) = move_picker.pick(pos, ss) {
         // Delta pruning: if the static eval plus the captured piece value is
         // still less than alpha then prune this move because it is hopeless.
         let mut delta = mv.captured_piece.map_or(0, |piece| PIECE_WEIGHTS[piece]);
@@ -43,7 +43,7 @@ pub fn search(pos: &mut Position, mut alpha: i32, beta: i32, report: &mut Report
             continue;
         }
 
-        let eval = -search(pos, -beta, -alpha, report);
+        let eval = -search(ss, pos, -beta, -alpha);
 
         pos.undo_move(&mv);
 
