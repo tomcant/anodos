@@ -1,7 +1,7 @@
 use super::{SearchState, history::HISTORY_SCORE_MAX, see};
 use crate::eval::terms::PIECE_WEIGHTS;
 use crate::r#move::Move;
-use crate::movegen::{MAX_MOVES, generate_noisy_moves, generate_quiet_moves};
+use crate::movegen::{MAX_MOVES, generate_noisy_moves, generate_quiet_moves, is_pseudo_legal_quiet_move};
 use crate::piece::Piece;
 use crate::position::Position;
 use smallvec::SmallVec;
@@ -11,9 +11,7 @@ const MVV_LVA_SCORE_MAX: i32 = 90_000; // KxQ = Queen (900) * 100 - King (0)
 // The "good/bad capture" and "quiet" scores are lower bounds, others are exact.
 const SCORE_GOOD_CAPTURE: i32 = 0;
 const SCORE_PROMOTION: i32 = MVV_LVA_SCORE_MAX + 1;
-const SCORE_KILLER_1: i32 = SCORE_PROMOTION + 1;
-const SCORE_KILLER_2: i32 = SCORE_KILLER_1 + 1;
-const SCORE_QUIET: i32 = SCORE_KILLER_2 + 1;
+const SCORE_QUIET: i32 = SCORE_PROMOTION + 1;
 const SCORE_BAD_CAPTURE: i32 = SCORE_QUIET + 2 * HISTORY_SCORE_MAX + 1;
 
 pub enum MovePickerMode {
@@ -35,13 +33,15 @@ enum MovePickerStage {
     TtMove,
     GenerateNoisy,
     Noisy,
-    GenerateQuiet { ply: u8 },
+    Killer { index: usize },
+    GenerateQuiet,
     Quiet,
 }
 
 pub struct MovePicker {
     mode: MovePickerMode,
     stage: MovePickerStage,
+    killers: [Option<Move>; 2],
     moves: SmallVec<[(Move, i32); MAX_MOVES]>,
     current_index: usize,
 }
@@ -51,6 +51,7 @@ impl MovePicker {
         Self {
             mode,
             stage: MovePickerStage::TtMove,
+            killers: [None; 2],
             moves: SmallVec::new(),
             current_index: 0,
         }
@@ -67,24 +68,22 @@ impl MovePicker {
                     }
                 }
                 MovePickerStage::GenerateNoisy => {
-                    self.generate_noisy(pos);
                     self.stage = MovePickerStage::Noisy;
+                    self.generate_noisy(pos);
                 }
                 MovePickerStage::Noisy => {
-                    let Some(index) = self.select(SCORE_BAD_CAPTURE) else {
+                    let Some(index) = self.find_best_index(SCORE_BAD_CAPTURE) else {
                         self.stage = match self.mode {
-                            MovePickerMode::AllMoves { ply, .. } => MovePickerStage::GenerateQuiet { ply },
+                            MovePickerMode::AllMoves { ply, .. } => {
+                                self.killers = [ss.killers.probe(ply, 0), ss.killers.probe(ply, 1)];
+                                MovePickerStage::Killer { index: 0 }
+                            }
                             MovePickerMode::Noisy => return None,
                         };
                         continue;
                     };
 
                     let (mv, _) = self.moves[index];
-
-                    if self.is_tt_move(&mv) {
-                        self.take(index);
-                        continue;
-                    }
 
                     // Defer bad captures until after quiets.
                     if mv.captured_piece.is_some() && !see::see_ge(&pos.board, &mv) {
@@ -95,19 +94,25 @@ impl MovePicker {
                     self.take(index);
                     return Some(mv);
                 }
-                MovePickerStage::GenerateQuiet { ply } => {
-                    self.generate_quiet(pos, ss, ply);
-                    self.stage = MovePickerStage::Quiet;
-                }
-                MovePickerStage::Quiet => {
-                    let index = self.select(i32::MAX)?;
-                    let mv = self.take(index);
-
-                    if self.is_tt_move(&mv) {
+                MovePickerStage::Killer { index } => {
+                    if index == self.killers.len() {
+                        self.stage = MovePickerStage::GenerateQuiet;
                         continue;
                     }
 
-                    return Some(mv);
+                    self.stage = MovePickerStage::Killer { index: index + 1 };
+
+                    if let Some(killer) = self.playable_killer(pos, index) {
+                        return Some(killer);
+                    }
+                }
+                MovePickerStage::GenerateQuiet => {
+                    self.stage = MovePickerStage::Quiet;
+                    self.generate_quiet(pos, ss);
+                }
+                MovePickerStage::Quiet => {
+                    let index = self.find_best_index(i32::MAX)?;
+                    return Some(self.take(index));
                 }
             }
         }
@@ -116,6 +121,10 @@ impl MovePicker {
     #[inline(never)]
     fn generate_noisy(&mut self, pos: &Position) {
         for mv in generate_noisy_moves(pos) {
+            if self.is_tt_move(&mv) {
+                continue;
+            }
+
             let score = match mv.captured_piece {
                 Some(victim) => SCORE_GOOD_CAPTURE + mvv_lva(victim, mv.piece),
                 None => SCORE_PROMOTION,
@@ -126,27 +135,36 @@ impl MovePicker {
     }
 
     #[inline(never)]
-    fn generate_quiet(&mut self, pos: &Position, ss: &SearchState, ply: u8) {
-        let killer1 = ss.killers.probe(ply, 0);
-        let killer2 = ss.killers.probe(ply, 1);
-
+    fn generate_quiet(&mut self, pos: &Position, ss: &SearchState) {
         for mv in generate_quiet_moves(pos) {
-            let score = if killer1.is_some_and(|killer| mv.equals(&killer)) {
-                SCORE_KILLER_1
-            } else if killer2.is_some_and(|killer| mv.equals(&killer)) {
-                SCORE_KILLER_2
-            } else {
-                SCORE_QUIET + HISTORY_SCORE_MAX - ss.history.probe(mv.piece, mv.to)
-            };
+            if self.is_tt_move(&mv) || self.is_killer(&mv) {
+                continue;
+            }
+
+            let score = SCORE_QUIET + HISTORY_SCORE_MAX - ss.history.probe(mv.piece, mv.to);
 
             self.moves.push((mv, score));
         }
     }
 
-    fn select(&self, limit: i32) -> Option<usize> {
+    fn playable_killer(&self, pos: &Position, index: usize) -> Option<Move> {
+        self.killers[index].filter(|killer| !self.is_tt_move(killer) && is_pseudo_legal_quiet_move(pos, killer))
+    }
+
+    fn is_killer(&self, mv: &Move) -> bool {
+        self.killers
+            .iter()
+            .any(|killer| killer.is_some_and(|killer| mv.equals(&killer)))
+    }
+
+    fn is_tt_move(&self, mv: &Move) -> bool {
+        self.mode.tt_move().is_some_and(|tt_move| mv.equals(&tt_move))
+    }
+
+    fn find_best_index(&self, max_score: i32) -> Option<usize> {
         (self.current_index..self.moves.len())
             .min_by_key(|&index| self.moves[index].1)
-            .filter(|&index| self.moves[index].1 < limit)
+            .filter(|&index| self.moves[index].1 < max_score)
     }
 
     fn take(&mut self, index: usize) -> Move {
@@ -154,10 +172,6 @@ impl MovePicker {
         let (mv, _) = self.moves[self.current_index];
         self.current_index += 1;
         mv
-    }
-
-    fn is_tt_move(&self, mv: &Move) -> bool {
-        self.mode.tt_move().is_some_and(|tt_move| mv.equals(&tt_move))
     }
 }
 
@@ -176,6 +190,16 @@ mod tests {
     use crate::search::{stopper::Stopper, tt::TranspositionTable};
     use crate::square::Square::*;
     use crate::testing::*;
+
+    #[test]
+    fn mvv_lva_scores_stay_within_the_good_capture_range() {
+        for victim in Piece::pieces().iter().filter(|piece| !piece.is_king()) {
+            for attacker in Piece::pieces() {
+                let score = mvv_lva(*victim, *attacker);
+                assert!((SCORE_GOOD_CAPTURE..SCORE_PROMOTION).contains(&score));
+            }
+        }
+    }
 
     #[test]
     fn order_moves_by_good_captures_mvv_lva_then_promotions_then_killers_then_history_then_bad_captures() {
@@ -203,6 +227,7 @@ mod tests {
         ss.history.store(-100, WP, C5); // Quiet 3 is bad, score low
 
         let pos = parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - -");
+
         let mut picker = MovePicker::new(MovePickerMode::AllMoves {
             tt_move: None,
             ply: killer_ply,
@@ -290,9 +315,11 @@ mod tests {
         let good_capture = make_move(WN, F4, D5, Some(BQ));
         let bad_capture = make_move(WN, F4, E6, Some(BP));
 
+        let killer_ply = 0;
         let mut tt = TranspositionTable::new(1);
         let stopper = Stopper::new();
-        let ss = SearchState::new(&mut tt, &stopper);
+        let mut ss = SearchState::new(&mut tt, &stopper);
+        ss.killers.store(killer_ply, &quiet); // A killer that is also the TT move is only tried once
 
         let pos = parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - -");
         let all_moves = generate_all_moves(&pos);
@@ -300,7 +327,7 @@ mod tests {
         for tt_move in [quiet, good_capture, bad_capture] {
             let mut picker = MovePicker::new(MovePickerMode::AllMoves {
                 tt_move: Some(tt_move),
-                ply: 0,
+                ply: killer_ply,
             });
 
             let picked = pick_all(&mut picker, &pos, &ss);
@@ -312,13 +339,39 @@ mod tests {
     }
 
     #[test]
-    fn mvv_lva_scores_stay_within_the_good_capture_range() {
-        for victim in Piece::pieces().iter().filter(|piece| !piece.is_king()) {
-            for attacker in Piece::pieces() {
-                let score = mvv_lva(*victim, *attacker);
-                assert!((SCORE_GOOD_CAPTURE..SCORE_PROMOTION).contains(&score));
-            }
+    fn skip_killers_that_are_not_pseudo_legal() {
+        let playable_killer = make_move(WP, G2, G3, None);
+        let missing_piece_killer = make_move(WN, B1, C3, None);
+
+        let killer_ply = 0;
+        let mut tt = TranspositionTable::new(1);
+        let stopper = Stopper::new();
+        let mut ss = SearchState::new(&mut tt, &stopper);
+        ss.killers.store(killer_ply, &playable_killer);
+        ss.killers.store(killer_ply, &missing_piece_killer); // Stored last, so tried first
+
+        let pos = parse_fen("7k/P7/4p1r1/1p1q4/2P2N2/3b3n/PP4P1/4K3 w - -");
+        let all_moves = generate_all_moves(&pos);
+
+        let mut picker = MovePicker::new(MovePickerMode::AllMoves {
+            tt_move: None,
+            ply: killer_ply,
+        });
+
+        let picked = pick_all(&mut picker, &pos, &ss);
+
+        assert_eq!(picked.len(), all_moves.len());
+
+        for mv in &all_moves {
+            assert!(picked.contains(mv));
         }
+
+        assert!(!picked.contains(&missing_piece_killer));
+
+        let index_killer = picked.iter().position(|mv| *mv == playable_killer).unwrap();
+        let index_first_quiet = picked.iter().position(|mv| mv.is_quiet()).unwrap();
+
+        assert_eq!(index_killer, index_first_quiet);
     }
 
     #[test]

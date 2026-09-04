@@ -1,5 +1,6 @@
 use crate::rng::{RNG_SEED, XorShift64};
 use crate::square::Square;
+use crate::squares;
 
 pub fn build() -> String {
     let mut out = "pub struct Magic { pub mask: u64, pub num: u64, pub shift: u8, pub offset: usize }\n".to_string();
@@ -12,8 +13,7 @@ fn build_magics(piece_name: &str, mask_fn: &dyn Fn(Square) -> u64, attacks_fn: &
     let mut out = format!("pub static {piece_name}_MAGICS: [Magic; 64] = [\n");
     let mut attacks = vec![];
 
-    for index in 0..64 {
-        let square = Square::from_index(index);
+    for square in squares() {
         let (mask, num, shift, table) = find_magic_for_square(square, mask_fn, attacks_fn);
         let offset = attacks.len();
 

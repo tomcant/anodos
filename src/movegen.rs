@@ -124,6 +124,29 @@ fn generate_moves(pos: &Position, gen_type: MoveGenType) -> MoveList {
     moves
 }
 
+pub fn is_pseudo_legal_quiet_move(pos: &Position, mv: &Move) -> bool {
+    let colour_to_move = pos.colour_to_move;
+    let board = &pos.board;
+
+    if !mv.is_quiet()
+        || mv.piece.colour() != colour_to_move
+        || board.piece_at(mv.from) != Some(mv.piece)
+        || board.has_piece_at(mv.to)
+    {
+        return false;
+    }
+
+    let to_squares = if mv.piece.is_pawn() {
+        pawn_advances(mv.from, colour_to_move, board) & !BACK_RANKS
+    } else if mv.is_castling() {
+        castling(pos.castling_rights, colour_to_move, board)
+    } else {
+        attacks(mv.piece, mv.from, board)
+    };
+
+    to_squares & mv.to.u64() != 0
+}
+
 fn pawn_advances(square: Square, colour: Colour, board: &Board) -> u64 {
     let one_ahead = square.advance(colour);
 
@@ -369,22 +392,21 @@ mod tests {
         assert_pseudo_legal_move_count("8/8/5p2/5P2/3N4/8/8/8 w - -", 7);
     }
 
+    const FENS: [&str; 8] = [
+        START_POS_FEN,                                                      // start position
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", // perft position 2, white to move
+        "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq -", // perft position 2, black to move
+        "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -",                            // perft position 3
+        "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -",     // perft position 4
+        "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ -",     // perft position 4, flipped
+        "8/8/8/3PpP2/8/8/8/8 w - e6",                                       // en passant position
+        "3q4/4P3/8/8/8/8/8/8 w - -",                                        // promotion with pawn advance or capture
+    ];
+
     #[test]
     fn noisy_and_quiet_moves_partition_all_moves() {
-        let fens = [
-            START_POS_FEN,
-            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
-            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq -",
-            "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -",
-            "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -",
-            "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ -",
-            "8/8/8/3PpP2/8/8/8/8 w - e6",
-            "3q4/4P3/8/8/8/8/8/8 w - -",
-        ];
-
-        for fen in fens {
+        for fen in FENS {
             let pos = parse_fen(fen);
-
             let all_moves = generate_all_moves(&pos);
             let noisy_moves = generate_noisy_moves(&pos);
             let quiet_moves = generate_quiet_moves(&pos);
@@ -395,6 +417,42 @@ mod tests {
 
             for mv in &all_moves {
                 assert!(noisy_moves.contains(mv) || quiet_moves.contains(mv));
+            }
+        }
+    }
+
+    #[test]
+    fn a_quiet_move_is_pseudo_legal_if_it_would_have_been_discovered_by_the_move_generator() {
+        for fen in FENS {
+            let pos = parse_fen(fen);
+            let quiet_moves = generate_quiet_moves(&pos);
+
+            for piece in Piece::pieces() {
+                for from in 0..64 {
+                    for to in 0..64 {
+                        let mv = Move {
+                            piece: *piece,
+                            from: Square::from_index(from),
+                            to: Square::from_index(to),
+                            captured_piece: None,
+                            promotion_piece: None,
+                            is_en_passant: false,
+                        };
+
+                        assert_eq!(is_pseudo_legal_quiet_move(&pos, &mv), quiet_moves.contains(&mv));
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_noisy_move_is_not_a_pseudo_legal_quiet_move() {
+        for fen in FENS {
+            let pos = parse_fen(fen);
+
+            for mv in generate_noisy_moves(&pos) {
+                assert!(!is_pseudo_legal_quiet_move(&pos, &mv));
             }
         }
     }
