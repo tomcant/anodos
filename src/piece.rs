@@ -60,6 +60,10 @@ impl Piece {
         matches!(self, WP | BP)
     }
 
+    pub fn is_queen(&self) -> bool {
+        matches!(self, WQ | BQ)
+    }
+
     pub fn is_king(&self) -> bool {
         matches!(self, WK | BK)
     }

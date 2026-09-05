@@ -13,6 +13,7 @@ const SCORE_GOOD_CAPTURE: i32 = 0;
 const SCORE_PROMOTION: i32 = MVV_LVA_SCORE_MAX + 1;
 const SCORE_QUIET: i32 = SCORE_PROMOTION + 1;
 const SCORE_BAD_CAPTURE: i32 = SCORE_QUIET + 2 * HISTORY_SCORE_MAX + 1;
+const SCORE_UNDERPROMOTION: i32 = SCORE_BAD_CAPTURE + MVV_LVA_SCORE_MAX + 1;
 
 pub enum MovePickerMode {
     AllMoves { tt_move: Option<Move>, ply: u8 },
@@ -69,7 +70,7 @@ impl MovePicker {
                 }
                 MovePickerStage::GenerateNoisy => {
                     self.stage = MovePickerStage::Noisy;
-                    self.generate_noisy(pos);
+                    self.generate_noisy_moves(pos);
                 }
                 MovePickerStage::Noisy => {
                     let Some(index) = self.find_best_index(SCORE_BAD_CAPTURE) else {
@@ -108,7 +109,7 @@ impl MovePicker {
                 }
                 MovePickerStage::GenerateQuiet => {
                     self.stage = MovePickerStage::Quiet;
-                    self.generate_quiet(pos, ss);
+                    self.generate_quiet_moves(pos, ss);
                 }
                 MovePickerStage::Quiet => {
                     let index = self.find_best_index(i32::MAX)?;
@@ -119,7 +120,7 @@ impl MovePicker {
     }
 
     #[inline(never)]
-    fn generate_noisy(&mut self, pos: &Position) {
+    fn generate_noisy_moves(&mut self, pos: &Position) {
         for mv in generate_noisy_moves(pos) {
             if self.is_tt_move(&mv) {
                 continue;
@@ -127,7 +128,8 @@ impl MovePicker {
 
             let score = match mv.captured_piece {
                 Some(victim) => SCORE_GOOD_CAPTURE + mvv_lva(victim, mv.piece),
-                None => SCORE_PROMOTION,
+                None if mv.promotion_piece.is_some_and(|p| p.is_queen()) => SCORE_PROMOTION,
+                _ => SCORE_UNDERPROMOTION,
             };
 
             self.moves.push((mv, score));
@@ -135,7 +137,7 @@ impl MovePicker {
     }
 
     #[inline(never)]
-    fn generate_quiet(&mut self, pos: &Position, ss: &SearchState) {
+    fn generate_quiet_moves(&mut self, pos: &Position, ss: &SearchState) {
         for mv in generate_quiet_moves(pos) {
             if self.is_tt_move(&mv) || self.is_killer(&mv) {
                 continue;
@@ -202,7 +204,7 @@ mod tests {
     }
 
     #[test]
-    fn order_moves_by_good_captures_mvv_lva_then_promotions_then_killers_then_history_then_bad_captures() {
+    fn order_moves_by_good_captures_then_promotions_then_killers_then_history_then_bad_captures_then_underpromotions() {
         let quiet1 = make_move(WP, G2, G4, None);
         let quiet2 = make_move(WP, G2, G3, None);
         let quiet3 = make_move(WP, C4, C5, None);
@@ -216,6 +218,7 @@ mod tests {
         let knight_x_knight = make_move(WN, F4, H3, Some(BN));
         let knight_x_pawn = make_move(WN, F4, E6, Some(BP)); // Bad capture
         let promotion = make_promotion_move(Colour::White, A7, A8, WQ);
+        let underpromotion = make_promotion_move(Colour::White, A7, A8, WN);
 
         let killer_ply = 0;
         let mut tt = TranspositionTable::new(1);
@@ -244,6 +247,7 @@ mod tests {
         let index_knight_x_pawn = index(&knight_x_pawn); // Bad capture
         let index_pawn_x_pawn = index(&pawn_x_pawn);
         let index_promotion = index(&promotion);
+        let index_underpromotion = index(&underpromotion);
         let index_killer1 = index(&killer1);
         let index_killer2 = index(&killer2);
         let index_quiet1 = index(&quiet1);
@@ -265,12 +269,13 @@ mod tests {
         assert!(index_quiet1 < index_quiet2);
         assert!(index_quiet2 < index_quiet3);
 
-        // Bad captures last.
+        // Then bad captures, then underpromotions last.
         assert!(index_quiet3 < index_knight_x_pawn);
+        assert!(index_knight_x_pawn < index_underpromotion);
     }
 
     #[test]
-    fn order_noisy_moves_by_good_captures_mvv_lva_then_promotions() {
+    fn order_noisy_moves_by_good_captures_then_promotions() {
         let pawn_x_pawn = make_move(WP, C4, B5, Some(BP));
         let pawn_x_queen = make_move(WP, C4, D5, Some(BQ));
         let knight_x_bishop = make_move(WN, F4, D3, Some(BB));
@@ -279,6 +284,7 @@ mod tests {
         let knight_x_knight = make_move(WN, F4, H3, Some(BN));
         let knight_x_pawn = make_move(WN, F4, E6, Some(BP)); // Bad capture
         let promotion = make_promotion_move(Colour::White, A7, A8, WQ);
+        let underpromotion = make_promotion_move(Colour::White, A7, A8, WN);
 
         let mut tt = TranspositionTable::new(1);
         let stopper = Stopper::new();
@@ -305,8 +311,9 @@ mod tests {
         assert!(index_knight_x_knight < index_pawn_x_pawn);
         assert!(index_pawn_x_pawn < index_promotion);
 
-        // Bad captures are pruned for quiescence search.
+        // Bad captures and underpromotions are pruned for quiescence search.
         assert!(!picked.contains(&knight_x_pawn));
+        assert!(!picked.contains(&underpromotion));
     }
 
     #[test]
