@@ -34,7 +34,7 @@ pub fn search(
 
     if depth == 0 {
         if !is_in_check(pos.colour_to_move, &pos.board) {
-            return quiescence::search(pos, alpha, beta, &mut ss.report);
+            return quiescence::search(ss, pos, alpha, beta);
         }
 
         // Extend the search if we're in check so that quiescence doesn't need
@@ -117,59 +117,14 @@ pub fn search(
     }
 
     let mut tt_bound = Bound::Upper;
+    let mut best_move = tt_move;
     let mut searched_quiets: SmallVec<[_; 32]> = SmallVec::new();
     let mut has_searched_one = false;
     let mut move_number = 0;
 
-    // Search the TT move before generating other moves because there's a good
-    // chance it leads to a cutoff
-    if let Some(mv) = tt_move {
-        pos.do_move(&mv);
+    let mut move_picker = MovePicker::new(MovePickerMode::AllMoves { tt_move, ply });
 
-        let eval = -search(ss, pos, depth - 1, -beta, -alpha, ply + 1);
-
-        pos.undo_move(&mv);
-
-        if eval >= beta {
-            if mv.is_quiet() {
-                ss.killers.store(ply, &mv);
-
-                let history_bonus = depth as i32 * depth as i32;
-                ss.history.store(history_bonus, mv.piece, mv.to);
-            }
-
-            ss.tt.store(pos.key, depth, tt::eval_in(eval, ply), Bound::Lower, tt_move);
-            return beta;
-        }
-
-        if eval > alpha {
-            alpha = eval;
-            tt_bound = Bound::Exact;
-            ss.pv.update(ply, mv);
-        }
-
-        if mv.is_quiet() {
-            searched_quiets.push((mv.piece, mv.to));
-        }
-
-        has_searched_one = true;
-        move_number = 1;
-    }
-
-    let mut move_picker = MovePicker::new(
-        pos,
-        MovePickerMode::AllMoves {
-            killers: &ss.killers,
-            history: &ss.history,
-            ply,
-        },
-    );
-
-    while let Some(mv) = move_picker.pick() {
-        if tt_move.is_some() && mv.equals(&tt_move.unwrap()) {
-            continue;
-        }
-
+    while let Some(mv) = move_picker.pick(pos, ss) {
         pos.do_move(&mv);
 
         if is_in_check(colour_to_move, &pos.board) {
@@ -275,7 +230,7 @@ pub fn search(
         if eval > alpha {
             alpha = eval;
             tt_bound = Bound::Exact;
-            tt_move = Some(mv);
+            best_move = Some(mv);
             ss.pv.update(ply, mv);
         }
 
@@ -286,7 +241,7 @@ pub fn search(
         return if in_check { -EVAL_MATE + ply as i32 } else { EVAL_DRAW };
     }
 
-    ss.tt.store(pos.key, depth, tt::eval_in(alpha, ply), tt_bound, tt_move);
+    ss.tt.store(pos.key, depth, tt::eval_in(alpha, ply), tt_bound, best_move);
 
     alpha
 }
