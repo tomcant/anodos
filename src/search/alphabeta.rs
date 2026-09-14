@@ -21,6 +21,7 @@ pub fn search(
     mut alpha: i32,
     beta: i32,
     ply: u8,
+    in_check: bool,
 ) -> i32 {
     ss.pv.clear(ply);
 
@@ -33,7 +34,7 @@ pub fn search(
     }
 
     if depth == 0 {
-        if !is_in_check(pos.colour_to_move, &pos.board) {
+        if !in_check {
             return quiescence::search(ss, pos, alpha, beta);
         }
 
@@ -69,9 +70,6 @@ pub fn search(
 
     ss.report.nodes += 1;
 
-    let colour_to_move = pos.colour_to_move;
-    let in_check = is_in_check(colour_to_move, &pos.board);
-
     // Static eval used for futility pruning heuristics at non-PV nodes. This is
     // intentionally restricted to a PVS null-window so we don't prune PV nodes
     // where we need accurate scores.
@@ -100,13 +98,15 @@ pub fn search(
         None
     };
 
+    let colour_to_move = pos.colour_to_move;
+
     // Null-move pruning: if not in check and with sufficient depth/material, try
     // a null move to quickly detect beta cutoffs.
     if depth >= 3 && !in_check && has_non_pawn_material(&pos.board, colour_to_move) {
         pos.do_null_move();
 
         let reduction = if depth > 6 { 3 } else { 2 };
-        let eval = -search(ss, pos, depth - reduction - 1, -beta, -beta + 1, ply + 1);
+        let eval = -search(ss, pos, depth - reduction - 1, -beta, -beta + 1, ply + 1, false);
 
         pos.undo_null_move();
 
@@ -188,21 +188,21 @@ pub fn search(
                 0
             };
 
-            eval = -search(ss, pos, depth - reduction - 1, -alpha - 1, -alpha, ply + 1);
+            eval = -search(ss, pos, depth - reduction - 1, -alpha - 1, -alpha, ply + 1, gives_check);
 
             // If the reduced search raised alpha then re-search at full depth
             // to see if the move is actually good.
             if eval > alpha && reduction > 0 {
-                eval = -search(ss, pos, depth - 1, -alpha - 1, -alpha, ply + 1);
+                eval = -search(ss, pos, depth - 1, -alpha - 1, -alpha, ply + 1, gives_check);
             }
 
             // If the zero-window PVS raised alpha then re-search at full window
             // to obtain the exact eval and PV.
             if eval > alpha && eval < beta {
-                eval = -search(ss, pos, depth - 1, -beta, -alpha, ply + 1);
+                eval = -search(ss, pos, depth - 1, -beta, -alpha, ply + 1, gives_check);
             }
         } else {
-            eval = -search(ss, pos, depth - 1, -beta, -alpha, ply + 1);
+            eval = -search(ss, pos, depth - 1, -beta, -alpha, ply + 1, gives_check);
         }
 
         pos.undo_move(&mv);

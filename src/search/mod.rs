@@ -92,9 +92,10 @@ pub fn search(
 
         last_eval = {
             let mut asp_retries = 0;
+            let in_check = is_in_check(pos.colour_to_move, &pos.board);
 
             loop {
-                let eval = alphabeta::search(&mut ss, pos, depth, alpha, beta, 0);
+                let eval = alphabeta::search(&mut ss, pos, depth, alpha, beta, 0, in_check);
 
                 if (eval > alpha && eval < beta) || stopper.should_stop(&ss.report) {
                     break eval;
