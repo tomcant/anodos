@@ -33,10 +33,11 @@ impl MovePickerMode {
 enum MovePickerStage {
     TtMove,
     GenerateNoisy,
-    Noisy,
+    GoodNoisy,
     Killer { index: usize },
     GenerateQuiet,
     Quiet,
+    BadNoisy,
 }
 
 pub struct MovePicker {
@@ -58,6 +59,10 @@ impl MovePicker {
         }
     }
 
+    pub fn is_in_bad_noisy_stage(&self) -> bool {
+        self.stage == MovePickerStage::BadNoisy
+    }
+
     pub fn pick(&mut self, pos: &Position, ss: &SearchState) -> Option<Move> {
         loop {
             match self.stage {
@@ -69,10 +74,10 @@ impl MovePicker {
                     }
                 }
                 MovePickerStage::GenerateNoisy => {
-                    self.stage = MovePickerStage::Noisy;
+                    self.stage = MovePickerStage::GoodNoisy;
                     self.generate_noisy_moves(pos);
                 }
-                MovePickerStage::Noisy => {
+                MovePickerStage::GoodNoisy => {
                     let Some(index) = self.find_best_index(SCORE_BAD_CAPTURE) else {
                         self.stage = match self.mode {
                             MovePickerMode::AllMoves { ply, .. } => {
@@ -112,6 +117,14 @@ impl MovePicker {
                     self.generate_quiet_moves(pos, ss);
                 }
                 MovePickerStage::Quiet => {
+                    let Some(index) = self.find_best_index(SCORE_BAD_CAPTURE) else {
+                        self.stage = MovePickerStage::BadNoisy;
+                        continue;
+                    };
+
+                    return Some(self.take(index));
+                }
+                MovePickerStage::BadNoisy => {
                     let index = self.find_best_index(i32::MAX)?;
                     return Some(self.take(index));
                 }

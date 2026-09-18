@@ -171,17 +171,20 @@ pub fn search(
         let mut eval;
 
         if has_searched_one {
-            // Late Move Reductions: for moves that are quiet, non-checking, and
-            // played later in the move order, we search them at reduced depth
-            // because they're less likely to raise alpha.
+            // Late Move Reductions: for moves that are quiet or bad noisy (losing
+            // captures and underpromotions), non-checking, and played later in
+            // the move order, we search them at reduced depth because they're
+            // less likely to raise alpha.
+            let is_reducible_quiet = mv.is_quiet()
+                && !ss.killers.is_killer(ply, &mv)
+                && ss.history.probe(mv.piece, mv.to) < LMR_HISTORY_THRESHOLD;
+
             let reduction = if !is_pv_node
                 && depth >= 3
                 && move_number >= 4
                 && !in_check
                 && !gives_check
-                && mv.is_quiet()
-                && !ss.killers.is_killer(ply, &mv)
-                && ss.history.probe(mv.piece, mv.to) < LMR_HISTORY_THRESHOLD
+                && (is_reducible_quiet || move_picker.is_in_bad_noisy_stage())
             {
                 (log2(depth) * log2(move_number) / 2).min(depth.saturating_sub(2))
             } else {
