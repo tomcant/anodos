@@ -92,7 +92,7 @@ impl MovePicker {
                     let (mv, _) = self.moves[index];
 
                     // Defer bad captures until after quiets.
-                    if mv.captured_piece.is_some() && !see::see_ge(&pos.board, &mv) {
+                    if mv.captured_piece.is_some() && !see::see_ge(&pos.board, &mv, 0) {
                         self.moves[index].1 += SCORE_BAD_CAPTURE;
                         continue;
                     }
