@@ -55,7 +55,6 @@ Anodos is a UCI-compatible chess engine written in Rust. Built from scratch with
 - Search
   - Mate distance pruning
   - Counter-move heuristic
-  - Reductions for late/bad captures
   - Singular extensions
   - TT eval caching
   - TT bucketing

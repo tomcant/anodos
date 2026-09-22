@@ -7,11 +7,17 @@ use crate::position::Board;
 use crate::square::Square;
 
 #[inline(never)]
-pub fn see_ge(board: &Board, mv: &Move) -> bool {
+pub fn see_ge(board: &Board, mv: &Move, threshold: i32) -> bool {
     debug_assert!(mv.captured_piece.is_some());
 
+    // If even an unanswered capture doesn't reach the threshold then nothing will.
+    let mut balance = piece_weight(mv.captured_piece.unwrap()) - threshold;
+
+    if balance < 0 {
+        return false;
+    }
+
     // Simulate the first exchange and return early if we are ahead or equal.
-    let mut balance = piece_weight(mv.captured_piece.unwrap());
     balance -= piece_weight(mv.promotion_piece.unwrap_or(mv.piece));
 
     if balance >= 0 {
@@ -140,7 +146,7 @@ mod tests {
             let piece = pos.board.piece_at(from).unwrap();
             let captured_piece = pos.board.piece_at(to).unwrap();
             let mv = make_move(piece, from, to, Some(captured_piece));
-            assert!(see_ge(&pos.board, &mv));
+            assert!(see_ge(&pos.board, &mv, 0));
         }
 
         #[rustfmt::skip]
@@ -150,7 +156,7 @@ mod tests {
         ];
         for (fen, from, to) in en_passant_cases {
             let mv = make_en_passant_move(Colour::White, from, to);
-            assert!(see_ge(&parse_fen(fen).board, &mv));
+            assert!(see_ge(&parse_fen(fen).board, &mv, 0));
         }
     }
 
@@ -168,7 +174,23 @@ mod tests {
             let pos = parse_fen(fen);
             let piece = pos.board.piece_at(from).unwrap();
             let captured_piece = pos.board.piece_at(to).unwrap();
-            assert!(!see_ge(&pos.board, &make_move(piece, from, to, Some(captured_piece))));
+            let mv = make_move(piece, from, to, Some(captured_piece));
+            assert!(!see_ge(&pos.board, &mv, 0));
         }
+    }
+
+    #[test]
+    fn pass_captures_whose_exchange_value_is_at_least_the_threshold() {
+        // Bxe5 Bxe5 Qxe5 Qxe5 loses a bishop for a pawn: SEE = -250.
+        let pos = parse_fen("4k3/6q1/5b2/4p3/8/2B5/1Q6/4K3 w - -");
+        let mv = make_move(WB, C3, E5, Some(BP));
+        assert!(see_ge(&pos.board, &mv, -250));
+        assert!(!see_ge(&pos.board, &mv, -249));
+
+        // Qxd5 wins an undefended pawn: SEE = 100.
+        let pos = parse_fen("4k3/8/8/3p4/8/8/8/3QK3 w - -");
+        let mv = make_move(WQ, D1, D5, Some(BP));
+        assert!(see_ge(&pos.board, &mv, 100));
+        assert!(!see_ge(&pos.board, &mv, 101));
     }
 }

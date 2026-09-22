@@ -125,6 +125,20 @@ pub fn search(
     let mut move_picker = MovePicker::new(MovePickerMode::AllMoves { tt_move, ply });
 
     while let Some(mv) = move_picker.pick(pos, ss) {
+        // SEE pruning: skip bad captures at shallow depths when they lose more
+        // material than a depth-scaled margin, since they're very unlikely to
+        // recover it.
+        if move_number > 0
+            && ply > 0
+            && depth <= 6
+            && alpha > -EVAL_MATE_THRESHOLD
+            && mv.captured_piece.is_some()
+            && move_picker.is_in_bad_noisy_stage()
+            && !see::see_ge(&pos.board, &mv, -80 * depth as i32)
+        {
+            continue;
+        }
+
         pos.do_move(&mv);
 
         if is_in_check(colour_to_move, &pos.board) {
@@ -171,7 +185,7 @@ pub fn search(
         let mut eval;
 
         if has_searched_one {
-            // Late Move Reductions: for moves that are quiet or bad noisy (losing
+            // Late move reductions: for moves that are quiet or bad noisy (losing
             // captures and underpromotions), non-checking, and played later in
             // the move order, we search them at reduced depth because they're
             // less likely to raise alpha.
